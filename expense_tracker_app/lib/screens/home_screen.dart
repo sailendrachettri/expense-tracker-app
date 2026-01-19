@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/categories.dart';
+import '../models/expense.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +15,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _amountController = TextEditingController();
   String? _selectedCategory;
 
+  final List<Expense> _todayExpenses = [];
+
   bool get _canAddExpense {
     return _amountController.text.isNotEmpty && _selectedCategory != null;
   }
@@ -22,12 +25,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final amount = double.tryParse(_amountController.text);
     if (amount == null || _selectedCategory == null) return;
 
-    // Later: save expense to list / database
-    debugPrint('Added ₹$amount for $_selectedCategory');
+    final expense = Expense(
+      id: DateTime.now().toString(),
+      category: _selectedCategory!,
+      amount: amount,
+      date: DateTime.now(),
+    );
 
-    _amountController.clear();
     setState(() {
+      _todayExpenses.insert(0, expense);
+      _amountController.clear();
       _selectedCategory = null;
+    });
+  }
+
+  void _deleteExpense(String id) {
+    setState(() {
+      _todayExpenses.removeWhere((e) => e.id == id);
     });
   }
 
@@ -72,10 +86,14 @@ class _HomeScreenState extends State<HomeScreen> {
             TextField(
               controller: _amountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 prefixText: '₹ ',
                 labelText: 'Amount (INR)',
-                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -89,14 +107,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 10),
 
-            // Category chips
             Wrap(
               spacing: 10,
               children: expenseCategories.map((category) {
-                final isSelected = _selectedCategory == category;
                 return ChoiceChip(
                   label: Text(category),
-                  selected: isSelected,
+                  selected: _selectedCategory == category,
                   onSelected: (_) {
                     setState(() {
                       _selectedCategory = category;
@@ -106,9 +122,56 @@ class _HomeScreenState extends State<HomeScreen> {
               }).toList(),
             ),
 
-            const Spacer(),
+            const SizedBox(height: 24),
 
-            // Add button (conditional)
+            const Text(
+              'Today',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 10),
+
+            // DAILY EXPENSE HISTORY
+            Expanded(
+              child: _todayExpenses.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No expenses added today',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _todayExpenses.length,
+                      itemBuilder: (context, index) {
+                        final expense = _todayExpenses[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.teal.shade100,
+                              child: const Icon(
+                                Icons.currency_rupee,
+                                color: Colors.teal,
+                              ),
+                            ),
+                            title: Text(expense.category),
+                            subtitle: Text(
+                              '₹${expense.amount.toStringAsFixed(2)}',
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () =>
+                                  _deleteExpense(expense.id),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+
             if (_canAddExpense)
               SizedBox(
                 width: double.infinity,
