@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/categories.dart';
 import '../models/expense.dart';
+import '../db/database_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return _amountController.text.isNotEmpty && _selectedCategory != null;
   }
 
-  void _addExpense() {
+  Future<void> _addExpense() async {
     final amount = double.tryParse(_amountController.text);
     if (amount == null || _selectedCategory == null) return;
 
@@ -32,6 +33,8 @@ class _HomeScreenState extends State<HomeScreen> {
       date: DateTime.now(),
     );
 
+    await DatabaseHelper.instance.insertExpense(expense);
+
     setState(() {
       _todayExpenses.insert(0, expense);
       _amountController.clear();
@@ -39,7 +42,23 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _deleteExpense(String id) {
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayExpenses();
+  }
+
+  Future<void> _loadTodayExpenses() async {
+    final expenses = await DatabaseHelper.instance.getTodayExpenses();
+    setState(() {
+      _todayExpenses.clear();
+      _todayExpenses.addAll(expenses);
+    });
+  }
+
+  Future<void> _deleteExpense(String id) async {
+    await DatabaseHelper.instance.deleteExpense(id);
+
     setState(() {
       _todayExpenses.removeWhere((e) => e.id == id);
     });
@@ -47,15 +66,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> _pages = [_homeTab(), _borrowTab(), _reportsTab()];
     return Scaffold(
-      body: _currentIndex == 0 ? _homeTab() : _reportsTab(),
+      body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+            icon: Icon(Icons.swap_horiz),
+            label: 'Borrow',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
@@ -163,8 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () =>
-                                  _deleteExpense(expense.id),
+                              onPressed: () => _deleteExpense(expense.id),
                             ),
                           ),
                         );
@@ -188,12 +208,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ---------------- REPORTS TAB ----------------
 
+  Widget _borrowTab() {
+    return const Center(
+      child: Text('Borrow coming soon 📊', style: TextStyle(fontSize: 18)),
+    );
+  }
+  // ---------------- REPORTS TAB ----------------
+
   Widget _reportsTab() {
     return const Center(
-      child: Text(
-        'Reports coming soon 📊',
-        style: TextStyle(fontSize: 18),
-      ),
+      child: Text('Reports coming soon 📊', style: TextStyle(fontSize: 18)),
     );
   }
 }
