@@ -1,0 +1,187 @@
+import 'package:flutter/material.dart';
+import '../../constants/categories.dart';
+import '../../models/expense.dart';
+import '../../db/database_helper.dart';
+
+class HomeTab extends StatefulWidget {
+  const HomeTab({super.key});
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  final TextEditingController _amountController = TextEditingController();
+  String? _selectedCategory;
+
+  final List<Expense> _todayExpenses = [];
+
+  bool get _canAddExpense =>
+      _amountController.text.isNotEmpty && _selectedCategory != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayExpenses();
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadTodayExpenses() async {
+    final expenses = await DatabaseHelper.instance.getTodayExpenses();
+    setState(() {
+      _todayExpenses
+        ..clear()
+        ..addAll(expenses);
+    });
+  }
+
+  Future<void> _addExpense() async {
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || _selectedCategory == null) return;
+
+    final expense = Expense(
+      id: DateTime.now().toString(),
+      category: _selectedCategory!,
+      amount: amount,
+      date: DateTime.now(),
+    );
+
+    await DatabaseHelper.instance.insertExpense(expense);
+
+    setState(() {
+      _todayExpenses.insert(0, expense);
+      _amountController.clear();
+      _selectedCategory = null;
+    });
+  }
+
+  Future<void> _deleteExpense(String id) async {
+    await DatabaseHelper.instance.deleteExpense(id);
+    setState(() {
+      _todayExpenses.removeWhere((e) => e.id == id);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+           children: [
+            const Text(
+              'Add Expense',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Amount input
+            TextField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                prefixText: '₹ ',
+                labelText: 'Amount (INR)',
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+
+            const SizedBox(height: 20),
+
+            const Text(
+              'Select Category',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+
+            const SizedBox(height: 10),
+
+            Wrap(
+              spacing: 10,
+              children: expenseCategories.map((category) {
+                return ChoiceChip(
+                  label: Text(category),
+                  selected: _selectedCategory == category,
+                  onSelected: (_) {
+                    setState(() {
+                      _selectedCategory = category;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 24),
+
+            const Text(
+              'Today',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 10),
+
+            // DAILY EXPENSE HISTORY
+            Expanded(
+              child: _todayExpenses.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No expenses added today',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _todayExpenses.length,
+                      itemBuilder: (context, index) {
+                        final expense = _todayExpenses[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.teal.shade100,
+                              child: const Icon(
+                                Icons.currency_rupee,
+                                color: Colors.teal,
+                              ),
+                            ),
+                            title: Text(expense.category),
+                            subtitle: Text(
+                              '₹${expense.amount.toStringAsFixed(2)}',
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteExpense(expense.id),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+
+            if (_canAddExpense)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _addExpense,
+                  child: const Text('Add Expense'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
