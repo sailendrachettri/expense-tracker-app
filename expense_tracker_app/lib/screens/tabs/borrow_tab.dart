@@ -25,7 +25,7 @@ class _BorrowTabState extends State<BorrowTab> {
   @override
   void initState() {
     super.initState();
-    _loadBorrows();
+    _loadBorrowers(); 
     _loadBorrows();
   }
 

@@ -15,11 +15,42 @@ class DatabaseHelper {
     return _database!;
   }
 
+  Future<void> _ensureDefaults(Database db) async {
+    // Check if categories table is empty
+    final categoryCount =
+        Sqflite.firstIntValue(
+          await db.rawQuery('SELECT COUNT(*) FROM categories'),
+        ) ??
+        0;
+    if (categoryCount == 0) {
+      await _insertDefaultCategories(db);
+    }
+
+    // Check if borrowers table is empty
+    final borrowerCount =
+        Sqflite.firstIntValue(
+          await db.rawQuery('SELECT COUNT(*) FROM borrowers'),
+        ) ??
+        0;
+    if (borrowerCount == 0) {
+      await _insertDefaultBorrowers(db);
+    }
+  }
+
   Future<Database> _initDB() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'expenses.db');
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: _createDB,
+      onOpen: (db) async {
+        // This runs every time the database is opened
+        // Insert defaults only if tables are empty
+        await _ensureDefaults(db);
+      },
+    );
   }
 
   Future<void> _insertDefaultBorrowers(Database db) async {
@@ -33,6 +64,25 @@ class DatabaseHelper {
     }
   }
 
+  Future<void> _insertDefaultCategories(Database db) async {
+    final defaults = [
+      'Groceries',
+      'Taxi Fare',
+      'Sweets',
+      'Food',
+      'Shopping',
+      'Other',
+    ];
+
+    for (final name in defaults) {
+      await db.insert(
+        'categories',
+        {'id': DateTime.now().millisecondsSinceEpoch.toString(), 'name': name},
+        conflictAlgorithm: ConflictAlgorithm.ignore, // avoids duplicates
+      );
+    }
+  }
+
   Future<void> _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE expenses (
@@ -42,6 +92,12 @@ class DatabaseHelper {
         date TEXT
       )
     ''');
+    await db.execute('''
+  CREATE TABLE categories (
+    id TEXT PRIMARY KEY,
+    name TEXT UNIQUE
+  )
+''');
 
     await db.execute('''
   CREATE TABLE borrows (
@@ -60,6 +116,29 @@ class DatabaseHelper {
   ''');
 
     await _insertDefaultBorrowers(db);
+    await _insertDefaultCategories(db);
+  }
+
+  // GET all categories
+  Future<List<String>> getCategories() async {
+    final db = await database;
+    final result = await db.query('categories', orderBy: 'name ASC');
+    return result.map((e) => e['name'] as String).toList();
+  }
+
+  // ADD a new category
+  Future<void> insertCategory(String name) async {
+    final db = await database;
+    await db.insert('categories', {
+      'id': DateTime.now().toString(),
+      'name': name,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
+
+  // DELETE category (optional)
+  Future<void> deleteCategory(String name) async {
+    final db = await database;
+    await db.delete('categories', where: 'name = ?', whereArgs: [name]);
   }
 
   // GET BORROWERS

@@ -15,6 +15,7 @@ class _HomeTabState extends State<HomeTab> {
   String? _selectedCategory;
 
   final List<Expense> _todayExpenses = [];
+  List<String> _categories = [];
 
   bool get _canAddExpense =>
       _amountController.text.isNotEmpty && _selectedCategory != null;
@@ -23,6 +24,7 @@ class _HomeTabState extends State<HomeTab> {
   void initState() {
     super.initState();
     _loadTodayExpenses();
+    _loadCategories();
   }
 
   @override
@@ -31,12 +33,55 @@ class _HomeTabState extends State<HomeTab> {
     super.dispose();
   }
 
+  void _showAddCategoryDialog() {
+    final controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Add Category'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'e.g. Entertainment, Bills',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+
+              await DatabaseHelper.instance.insertCategory(
+                controller.text.trim(),
+              );
+
+              Navigator.pop(context);
+              _loadCategories();
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _loadTodayExpenses() async {
     final expenses = await DatabaseHelper.instance.getTodayExpenses();
     setState(() {
       _todayExpenses
         ..clear()
         ..addAll(expenses);
+    });
+  }
+
+  Future<void> _loadCategories() async {
+    final data = await DatabaseHelper.instance.getCategories();
+    setState(() {
+      _categories = data;
     });
   }
 
@@ -74,7 +119,7 @@ class _HomeTabState extends State<HomeTab> {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-           children: [
+          children: [
             const Text(
               'Add Expense',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -97,6 +142,11 @@ class _HomeTabState extends State<HomeTab> {
               ),
               onChanged: (_) => setState(() {}),
             ),
+            TextButton.icon(
+              onPressed: _showAddCategoryDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Category'),
+            ),
 
             const SizedBox(height: 20),
 
@@ -109,7 +159,7 @@ class _HomeTabState extends State<HomeTab> {
 
             Wrap(
               spacing: 10,
-              children: expenseCategories.map((category) {
+              children: _categories.map((category) {
                 return ChoiceChip(
                   label: Text(category),
                   selected: _selectedCategory == category,
