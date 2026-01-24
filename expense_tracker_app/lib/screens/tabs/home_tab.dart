@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../constants/categories.dart';
 import '../../models/expense.dart';
 import '../../db/database_helper.dart';
 

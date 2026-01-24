@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'screens/app_loader.dart';
 
 void main() {
   runApp(const ExpenseTrackerApp());
@@ -17,7 +17,7 @@ class ExpenseTrackerApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: Colors.teal,
       ),
-      home: const HomeScreen(),
+      home: const AppLoader(), // 👈 loader first
     );
   }
 }
