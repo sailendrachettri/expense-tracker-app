@@ -1,2 +1,3 @@
-# expense-tracker-app
+#  ExpenseX
 Daily expanse tracker app for android
+
