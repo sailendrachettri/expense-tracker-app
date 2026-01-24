@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../../models/expense.dart';
+import '../../models/borrow.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -18,11 +19,7 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'expenses.db');
 
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createDB,
-    );
+    return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -34,7 +31,35 @@ class DatabaseHelper {
         date TEXT
       )
     ''');
+
+    await db.execute('''
+  CREATE TABLE borrows (
+    id TEXT PRIMARY KEY,
+    person TEXT,
+    amount REAL,
+    date TEXT
+  )
+''');
   }
+
+  // INSERT BORROW
+  Future<void> insertBorrow(Borrow borrow) async {
+    final db = await database;
+    await db.insert('borrows', borrow.toMap());
+  }
+
+  // GET ALL BORROWS
+  Future<List<Borrow>> getBorrows() async {
+    final db = await database;
+    final result = await db.query('borrows', orderBy: 'date DESC');
+    return result.map((e) => Borrow.fromMap(e)).toList();
+  }
+  
+  Future<void> deleteBorrow(String id) async {
+  final db = await database;
+  await db.delete('borrows', where: 'id = ?', whereArgs: [id]);
+}
+
 
   // INSERT
   Future<void> insertExpense(Expense expense) async {
