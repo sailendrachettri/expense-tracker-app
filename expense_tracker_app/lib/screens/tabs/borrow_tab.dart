@@ -15,13 +15,7 @@ class _BorrowTabState extends State<BorrowTab> {
 
   final List<Borrow> _borrows = [];
 
-  final List<String> _borrowers = [
-    'Friend',
-    'Family',
-    'Office Colleague',
-    'Bank',
-    'Other',
-  ];
+  List<String> _borrowers = [];
 
   bool get _canAddBorrow {
     final amount = double.tryParse(_amountController.text);
@@ -32,12 +26,20 @@ class _BorrowTabState extends State<BorrowTab> {
   void initState() {
     super.initState();
     _loadBorrows();
+    _loadBorrows();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadBorrowers() async {
+    final data = await DatabaseHelper.instance.getBorrowers();
+    setState(() {
+      _borrowers = data;
+    });
   }
 
   Future<void> _loadBorrows() async {
@@ -73,6 +75,42 @@ class _BorrowTabState extends State<BorrowTab> {
     _loadBorrows();
   }
 
+  void _showAddBorrowerDialog() {
+  final controller = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text('Add Borrower'),
+      content: TextField(
+        controller: controller,
+        decoration: const InputDecoration(
+          hintText: 'e.g. John, Mom, HDFC Bank',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            if (controller.text.trim().isEmpty) return;
+
+            await DatabaseHelper.instance
+                .insertBorrower(controller.text.trim());
+
+            Navigator.pop(context);
+            _loadBorrowers();
+          },
+          child: const Text('Add'),
+        ),
+      ],
+    ),
+  );
+}
+
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -102,6 +140,11 @@ class _BorrowTabState extends State<BorrowTab> {
                 ),
               ),
               onChanged: (_) => setState(() {}),
+            ),
+            TextButton.icon(
+              onPressed: _showAddBorrowerDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Borrower'),
             ),
 
             const SizedBox(height: 20),

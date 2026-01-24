@@ -22,6 +22,17 @@ class DatabaseHelper {
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
+  Future<void> _insertDefaultBorrowers(Database db) async {
+    final defaults = ['Friend', 'Family', 'Office Colleague', 'Bank', 'Other'];
+
+    for (final name in defaults) {
+      await db.insert('borrowers', {
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'name': name,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+  }
+
   Future<void> _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE expenses (
@@ -40,6 +51,37 @@ class DatabaseHelper {
     date TEXT
   )
 ''');
+
+    await db.execute('''
+    CREATE TABLE borrowers (
+      id TEXT PRIMARY KEY,
+      name TEXT UNIQUE
+    )
+  ''');
+
+    await _insertDefaultBorrowers(db);
+  }
+
+  // GET BORROWERS
+  Future<List<String>> getBorrowers() async {
+    final db = await database;
+    final result = await db.query('borrowers', orderBy: 'name ASC');
+    return result.map((e) => e['name'] as String).toList();
+  }
+
+  // ADD BORROWER
+  Future<void> insertBorrower(String name) async {
+    final db = await database;
+    await db.insert('borrowers', {
+      'id': DateTime.now().toString(),
+      'name': name,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
+
+  // DELETE BORROWER (optional)
+  Future<void> deleteBorrower(String name) async {
+    final db = await database;
+    await db.delete('borrowers', where: 'name = ?', whereArgs: [name]);
   }
 
   // INSERT BORROW
@@ -54,12 +96,11 @@ class DatabaseHelper {
     final result = await db.query('borrows', orderBy: 'date DESC');
     return result.map((e) => Borrow.fromMap(e)).toList();
   }
-  
-  Future<void> deleteBorrow(String id) async {
-  final db = await database;
-  await db.delete('borrows', where: 'id = ?', whereArgs: [id]);
-}
 
+  Future<void> deleteBorrow(String id) async {
+    final db = await database;
+    await db.delete('borrows', where: 'id = ?', whereArgs: [id]);
+  }
 
   // INSERT
   Future<void> insertExpense(Expense expense) async {
