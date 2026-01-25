@@ -119,29 +119,8 @@ class DatabaseHelper {
     await _insertDefaultCategories(db);
   }
 
-  // GET all categories
-  Future<List<String>> getCategories() async {
-    final db = await database;
-    final result = await db.query('categories', orderBy: 'name ASC');
-    return result.map((e) => e['name'] as String).toList();
-  }
-
-  // ADD a new category
-  Future<void> insertCategory(String name) async {
-    final db = await database;
-    await db.insert('categories', {
-      'id': DateTime.now().toString(),
-      'name': name,
-    }, conflictAlgorithm: ConflictAlgorithm.ignore);
-  }
-
-  // DELETE category (optional)
-  Future<void> deleteCategory(String name) async {
-    final db = await database;
-    await db.delete('categories', where: 'name = ?', whereArgs: [name]);
-  }
-
-  // GET BORROWERS
+  // ---------------------------------Borrowing---------------------------------
+  // GET BORROWERS: peoples 
   Future<List<String>> getBorrowers() async {
     final db = await database;
     final result = await db.query('borrowers', orderBy: 'name ASC');
@@ -163,7 +142,7 @@ class DatabaseHelper {
     await db.delete('borrowers', where: 'name = ?', whereArgs: [name]);
   }
 
-  // INSERT BORROW
+    // INSERT BORROW
   Future<void> insertBorrow(Borrow borrow) async {
     final db = await database;
     await db.insert('borrows', borrow.toMap());
@@ -179,6 +158,30 @@ class DatabaseHelper {
   Future<void> deleteBorrow(String id) async {
     final db = await database;
     await db.delete('borrows', where: 'id = ?', whereArgs: [id]);
+  }
+
+  //--------------------------------- Expense---------------------------------
+
+  // GET all categories
+  Future<List<String>> getCategories() async {
+    final db = await database;
+    final result = await db.query('categories', orderBy: 'name ASC');
+    return result.map((e) => e['name'] as String).toList();
+  }
+
+  // ADD a new category
+  Future<void> insertCategory(String name) async {
+    final db = await database;
+    await db.insert('categories', {
+      'id': DateTime.now().toString(),
+      'name': name,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
+
+  // DELETE category (optional)
+  Future<void> deleteCategory(String name) async {
+    final db = await database;
+    await db.delete('categories', where: 'name = ?', whereArgs: [name]);
   }
 
   // INSERT
@@ -204,24 +207,6 @@ class DatabaseHelper {
     );
 
     return result.map((e) => Expense.fromMap(e)).toList();
-  }
-
-  // READ (today total expense)
-  Future<double> getTodayTotalAmount() async {
-    final db = await database;
-    final today = DateTime.now().toIso8601String().substring(0, 10);
-
-    final result = await db.rawQuery(
-      '''
-    SELECT SUM(amount) as total
-    FROM expenses
-    WHERE date LIKE ?
-    ''',
-      ['$today%'],
-    );
-
-    final total = result.first['total'] as double?;
-    return total ?? 0.0;
   }
 
   // DELETE

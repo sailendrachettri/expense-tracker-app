@@ -12,16 +12,12 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> {
   final TextEditingController _amountController = TextEditingController();
-  
+
   String? _selectedCategory;
 
   double get totalExpenseAmountToday {
-  return _todayExpenses.fold(
-    0.0,
-    (sum, e) => sum + e.amount,
-  );
-}
-
+    return _todayExpenses.fold(0.0, (sum, e) => sum + e.amount);
+  }
 
   final List<Expense> _todayExpenses = [];
   List<String> _categories = [];
@@ -44,7 +40,6 @@ class _HomeTabState extends State<HomeTab> {
 
   void _showAddCategoryDialog() {
     final controller = TextEditingController();
-    
 
     showDialog(
       context: context,
@@ -139,20 +134,40 @@ class _HomeTabState extends State<HomeTab> {
 
             const SizedBox(height: 20),
 
-            // Amount input
-            TextField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                prefixText: '₹ ',
-                labelText: 'Amount (INR)',
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+            Row(
+              children: [
+                // Amount input
+                Expanded(
+                  child: TextField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      prefixText: '₹ ',
+                      labelText: 'Amount (INR)',
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
                 ),
-              ),
-              onChanged: (_) => setState(() {}),
+
+                const SizedBox(width: 12),
+
+                // Add button
+                SizedBox(
+                  height: 56, // matches TextField height
+                  width: 100,
+                  child: ElevatedButton(
+                    onPressed: _canAddExpense
+                        ? _addExpense
+                        : null, // 👈 disable logic
+                    child: const Text('Add'),
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 20),
@@ -183,6 +198,9 @@ class _HomeTabState extends State<HomeTab> {
                 return ChoiceChip(
                   label: Text(category, style: TextStyle(fontSize: 10)),
                   selected: _selectedCategory == category,
+                   shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)
+                  ),
                   onSelected: (_) {
                     setState(() {
                       _selectedCategory = category;
@@ -332,14 +350,14 @@ class _HomeTabState extends State<HomeTab> {
                     ),
             ),
 
-            if (_canAddExpense)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _addExpense,
-                  child: const Text('Add Expense'),
-                ),
-              ),
+            // if (_canAddExpense)
+            //   SizedBox(
+            //     width: double.infinity,
+            //     child: ElevatedButton(
+            //       onPressed: _addExpense,
+            //       child: const Text('Add Expense'),
+            //     ),
+            //   ),
           ],
         ),
       ),

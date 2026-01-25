@@ -14,6 +14,13 @@ class _BorrowTabState extends State<BorrowTab> {
   final TextEditingController _amountController = TextEditingController();
   String? _selectedBorrower;
 
+    double get totalBorrowAmount {
+  return _borrows.fold(
+    0.0,
+    (sum, e) => sum + e.amount,
+  );
+}
+
   final List<Borrow> _borrows = [];
 
   List<String> _borrowers = [];
@@ -129,20 +136,41 @@ class _BorrowTabState extends State<BorrowTab> {
 
             const SizedBox(height: 20),
 
-            // Amount input
-            TextField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                prefixText: '₹ ',
-                labelText: 'Amount (INR)',
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+          
+             Row(
+              children: [
+                // Amount input
+                Expanded(
+                  child: TextField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      prefixText: '₹ ',
+                      labelText: 'Amount (INR)',
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
                 ),
-              ),
-              onChanged: (_) => setState(() {}),
+
+                const SizedBox(width: 12),
+
+                // Add button
+                SizedBox(
+                  height: 56, // matches TextField height
+                  width: 100,
+                  child: ElevatedButton(
+                    onPressed: _canAddBorrow
+                        ? _addBorrow
+                        : null, // 👈 disable logic
+                    child: const Text('Add'),
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 20),
@@ -173,6 +201,9 @@ class _BorrowTabState extends State<BorrowTab> {
                 return ChoiceChip(
                   label: Text(person, style: TextStyle(fontSize: 10)),
                   selected: _selectedBorrower == person,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)
+                  ),
                   onSelected: (_) {
                     setState(() {
                       _selectedBorrower = person;
@@ -184,9 +215,24 @@ class _BorrowTabState extends State<BorrowTab> {
 
             const SizedBox(height: 24),
 
-            const Text(
-              'Today',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+           
+            Row(
+              children: [
+                const Text(
+                  'Due Amount',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                Text(
+                  '₹${totalBorrowAmount.toStringAsFixed(2)}',
+                  maxLines: 1,
+                  softWrap: false,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 10),
@@ -306,16 +352,6 @@ class _BorrowTabState extends State<BorrowTab> {
                       },
                     ),
             ),
-
-            // ADD BUTTON (only when valid)
-            if (_canAddBorrow)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _addBorrow,
-                  child: const Text('Add Borrow'),
-                ),
-              ),
           ],
         ),
       ),
