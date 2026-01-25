@@ -117,6 +117,32 @@ class _HomeTabState extends State<HomeTab> {
     });
   }
 
+  Future<void> _confirmRepay(Expense expense) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Mark as Delete?'),
+        content: Text(
+          'Delete this expense of ₹${expense.amount.toStringAsFixed(2)} for ${expense.category} ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes, Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _deleteExpense(expense.id);
+    }
+  }
+
   int? _selectedExpenseIndex;
 
   @override
@@ -326,7 +352,7 @@ class _HomeTabState extends State<HomeTab> {
                                               ),
                                               splashRadius: 18,
                                               onPressed: () =>
-                                                  _deleteExpense(expense.id),
+                                                  _confirmRepay(expense),
                                             )
                                           : Align(
                                               key: const ValueKey('amount'),
