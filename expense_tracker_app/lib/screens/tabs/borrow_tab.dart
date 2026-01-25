@@ -14,12 +14,9 @@ class _BorrowTabState extends State<BorrowTab> {
   final TextEditingController _amountController = TextEditingController();
   String? _selectedBorrower;
 
-    double get totalBorrowAmount {
-  return _borrows.fold(
-    0.0,
-    (sum, e) => sum + e.amount,
-  );
-}
+  double get totalBorrowAmount {
+    return _borrows.fold(0.0, (sum, e) => sum + e.amount);
+  }
 
   final List<Borrow> _borrows = [];
 
@@ -121,6 +118,32 @@ class _BorrowTabState extends State<BorrowTab> {
 
   int? _selectedBorrowIndex;
 
+  Future<void> _confirmRepay(Borrow borrow) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Mark as Paid?'),
+        content: Text(
+          'Have you repaid ₹${borrow.amount.toStringAsFixed(2)} to ${borrow.person}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes, Paid'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _deleteBorrow(borrow.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -131,13 +154,12 @@ class _BorrowTabState extends State<BorrowTab> {
           children: [
             const Text(
               'Add Borrow',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
-          
-             Row(
+            Row(
               children: [
                 // Amount input
                 Expanded(
@@ -202,7 +224,7 @@ class _BorrowTabState extends State<BorrowTab> {
                   label: Text(person, style: TextStyle(fontSize: 10)),
                   selected: _selectedBorrower == person,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   onSelected: (_) {
                     setState(() {
@@ -215,7 +237,6 @@ class _BorrowTabState extends State<BorrowTab> {
 
             const SizedBox(height: 24),
 
-           
             Row(
               children: [
                 const Text(
@@ -318,15 +339,22 @@ class _BorrowTabState extends State<BorrowTab> {
                                             child: child,
                                           ),
                                       child: isSelected
-                                          ? IconButton(
-                                              key: const ValueKey('delete'),
+                                          ? TextButton.icon(
+                                              key: const ValueKey('pay'),
                                               icon: const Icon(
-                                                Icons.delete_outline,
-                                                color: Colors.red,
+                                                Icons.payments_outlined,
+                                                color: Colors.green,
+                                                size: 20,
                                               ),
-                                              splashRadius: 18,
-                                              onPressed: () =>
-                                                  _deleteBorrow(borrow.id),
+                                              label: const Text(
+                                                'Pay',
+                                                style: TextStyle(
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                             onPressed: () => _confirmRepay(borrow),
+
                                             )
                                           : Align(
                                               key: const ValueKey('amount'),

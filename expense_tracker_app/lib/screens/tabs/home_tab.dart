@@ -128,11 +128,11 @@ class _HomeTabState extends State<HomeTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Add Expense',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              'Daily Expense',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
             Row(
               children: [
