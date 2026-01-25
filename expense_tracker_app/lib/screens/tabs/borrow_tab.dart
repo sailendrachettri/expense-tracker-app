@@ -25,7 +25,7 @@ class _BorrowTabState extends State<BorrowTab> {
   @override
   void initState() {
     super.initState();
-    _loadBorrowers(); 
+    _loadBorrowers();
     _loadBorrows();
   }
 
@@ -76,40 +76,40 @@ class _BorrowTabState extends State<BorrowTab> {
   }
 
   void _showAddBorrowerDialog() {
-  final controller = TextEditingController();
+    final controller = TextEditingController();
 
-  showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: const Text('Add Borrower'),
-      content: TextField(
-        controller: controller,
-        decoration: const InputDecoration(
-          hintText: 'e.g. John, Mom, HDFC Bank',
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Add Borrower'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'e.g. John, Mom, HDFC Bank',
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+
+              await DatabaseHelper.instance.insertBorrower(
+                controller.text.trim(),
+              );
+
+              Navigator.pop(context);
+              _loadBorrowers();
+            },
+            child: const Text('Add'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            if (controller.text.trim().isEmpty) return;
-
-            await DatabaseHelper.instance
-                .insertBorrower(controller.text.trim());
-
-            Navigator.pop(context);
-            _loadBorrowers();
-          },
-          child: const Text('Add'),
-        ),
-      ],
-    ),
-  );
-}
-
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,27 +141,34 @@ class _BorrowTabState extends State<BorrowTab> {
               ),
               onChanged: (_) => setState(() {}),
             ),
-            TextButton.icon(
-              onPressed: _showAddBorrowerDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Borrower'),
-            ),
 
             const SizedBox(height: 20),
 
-            const Text(
-              'Borrowed From',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'Borrowed From',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                ),
+                const SizedBox(width: 10),
+                InkWell(
+                  onTap: _showAddBorrowerDialog,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(Icons.add_circle, size: 17),
+                  ),
+                ),
+              ],
             ),
-
-            const SizedBox(height: 10),
 
             // Borrower selector (like category chips)
             Wrap(
               spacing: 10,
               children: _borrowers.map((person) {
                 return ChoiceChip(
-                  label: Text(person),
+                  label: Text(person, style: TextStyle(fontSize: 10)),
                   selected: _selectedBorrower == person,
                   onSelected: (_) {
                     setState(() {

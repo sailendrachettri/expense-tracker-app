@@ -145,28 +145,25 @@ class _HomeTabState extends State<HomeTab> {
             const SizedBox(height: 20),
 
             Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textBaseline: TextBaseline.alphabetic,
               children: [
                 const Text(
                   'Select Category',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
-                const SizedBox(width: 6),
-                TextButton.icon(
-                  onPressed: _showAddCategoryDialog,
-                  icon: const Icon(Icons.add_circle, size: 18),
-                  label: const Text(''),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                const SizedBox(width: 10),
+                InkWell(
+                  onTap: _showAddCategoryDialog,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(Icons.add_circle, size: 17),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 10),
 
             Wrap(
               spacing: 10,
