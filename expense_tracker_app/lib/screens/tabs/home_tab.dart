@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/expense.dart';
 import '../../db/database_helper.dart';
+import '../../utils/formate_date_time.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -111,6 +112,8 @@ class _HomeTabState extends State<HomeTab> {
     });
   }
 
+  int? _selectedExpenseIndex;
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -164,7 +167,6 @@ class _HomeTabState extends State<HomeTab> {
               ],
             ),
 
-
             Wrap(
               spacing: 10,
               children: _categories.map((category) {
@@ -202,26 +204,105 @@ class _HomeTabState extends State<HomeTab> {
                       itemCount: _todayExpenses.length,
                       itemBuilder: (context, index) {
                         final expense = _todayExpenses[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.teal.shade100,
-                              child: const Icon(
-                                Icons.currency_rupee,
-                                color: Colors.teal,
+                        final isSelected = _selectedExpenseIndex == index;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedExpenseIndex = isSelected ? null : index;
+                            });
+                          },
+                          child: Card(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            elevation: isSelected ? 3 : 1.5,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
                               ),
-                            ),
-                            title: Text(expense.category),
-                            subtitle: Text(
-                              '₹${expense.amount.toStringAsFixed(2)}',
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteExpense(expense.id),
+                              child: Row(
+                                children: [
+                                  // Icon
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: Colors.teal.shade100,
+                                    child: const Icon(
+                                      Icons.currency_rupee,
+                                      color: Colors.teal,
+                                      size: 20,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 12),
+
+                                  // Category + Time
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          expense.category,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        // const SizedBox(height: 2),
+                                        Text(
+                                          formatExpenseTime(expense.date),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Amount / Delete
+                                  SizedBox(
+                                    width:
+                                        60, // 👈 lock width (tweak if needed)
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      transitionBuilder: (child, animation) =>
+                                          ScaleTransition(
+                                            scale: animation,
+                                            child: child,
+                                          ),
+                                      child: isSelected
+                                          ? IconButton(
+                                              key: const ValueKey('delete'),
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                color: Colors.red,
+                                                size: 27,
+                                              ),
+                                              splashRadius: 18,
+                                              onPressed: () =>
+                                                  _deleteExpense(expense.id),
+                                            )
+                                          : Align(
+                                              key: const ValueKey('amount'),
+                                              alignment: Alignment.centerRight,
+                                              child: Text(
+                                                '₹${expense.amount.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 18,
+                                                ),
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );

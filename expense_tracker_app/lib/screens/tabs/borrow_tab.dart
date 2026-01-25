@@ -1,3 +1,4 @@
+import 'package:expense_tracker_app/utils/formate_date_time.dart';
 import 'package:flutter/material.dart';
 import '../../models/borrow.dart';
 import '../../db/database_helper.dart';
@@ -111,6 +112,8 @@ class _BorrowTabState extends State<BorrowTab> {
     );
   }
 
+  int? _selectedBorrowIndex;
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -201,27 +204,99 @@ class _BorrowTabState extends State<BorrowTab> {
                       itemCount: _borrows.length,
                       itemBuilder: (context, index) {
                         final borrow = _borrows[index];
+                        final isSelected = _selectedBorrowIndex == index;
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.orange.shade100,
-                              child: const Icon(
-                                Icons.person,
-                                color: Colors.orange,
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedBorrowIndex = isSelected ? null : index;
+                            });
+                          },
+                          child: Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: isSelected ? 3 : 1.5,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
                               ),
-                            ),
-                            title: Text(borrow.person),
-                            subtitle: Text(
-                              '₹${borrow.amount.toStringAsFixed(2)}',
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteBorrow(borrow.id),
+                              child: Row(
+                                children: [
+                                  // Avatar
+                                  CircleAvatar(
+                                    backgroundColor: Colors.orange.shade100,
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 12),
+
+                                  // Person + time
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          borrow.person,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        Text(
+                                          formatExpenseTime(borrow.date),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Amount / Delete switcher
+                                  SizedBox(
+                                    width: 56, // 👈 fixed width prevents shift
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      transitionBuilder: (child, animation) =>
+                                          ScaleTransition(
+                                            scale: animation,
+                                            child: child,
+                                          ),
+                                      child: isSelected
+                                          ? IconButton(
+                                              key: const ValueKey('delete'),
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                color: Colors.red,
+                                              ),
+                                              splashRadius: 18,
+                                              onPressed: () =>
+                                                  _deleteBorrow(borrow.id),
+                                            )
+                                          : Align(
+                                              key: const ValueKey('amount'),
+                                              alignment: Alignment.centerRight,
+                                              child: Text(
+                                                '₹${borrow.amount.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );
