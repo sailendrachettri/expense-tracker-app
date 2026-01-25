@@ -141,17 +141,29 @@ class _HomeTabState extends State<HomeTab> {
               ),
               onChanged: (_) => setState(() {}),
             ),
-            TextButton.icon(
-              onPressed: _showAddCategoryDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Category'),
-            ),
 
             const SizedBox(height: 20),
 
-            const Text(
-              'Select Category',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                const Text(
+                  'Select Category',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(width: 6),
+                TextButton.icon(
+                  onPressed: _showAddCategoryDialog,
+                  icon: const Icon(Icons.add_circle, size: 18),
+                  label: const Text(''),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 10),
@@ -160,7 +172,7 @@ class _HomeTabState extends State<HomeTab> {
               spacing: 10,
               children: _categories.map((category) {
                 return ChoiceChip(
-                  label: Text(category),
+                  label: Text(category, style: TextStyle(fontSize: 10)),
                   selected: _selectedCategory == category,
                   onSelected: (_) {
                     setState(() {
