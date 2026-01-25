@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/expense.dart';
 import '../../db/database_helper.dart';
 import '../../utils/formate_date_time.dart';
+import '../../utils/formate_pretty_date.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -16,10 +17,10 @@ class _HomeTabState extends State<HomeTab> {
   String? _selectedCategory;
 
   double get totalExpenseAmountToday {
-    return _todayExpenses.fold(0.0, (sum, e) => sum + e.amount);
+    return _expensesByDate.fold(0.0, (sum, e) => sum + e.amount);
   }
 
-  final List<Expense> _todayExpenses = [];
+  final List<Expense> _expensesByDate = [];
   List<String> _categories = [];
 
   bool get _canAddExpense =>
@@ -28,7 +29,7 @@ class _HomeTabState extends State<HomeTab> {
   @override
   void initState() {
     super.initState();
-    _loadTodayExpenses();
+    _loadExpensesByDate();
     _loadCategories();
   }
 
@@ -74,10 +75,14 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Future<void> _loadTodayExpenses() async {
-    final expenses = await DatabaseHelper.instance.getTodayExpenses();
+  DateTime _selectedDate = DateTime.now();
+
+  Future<void> _loadExpensesByDate() async {
+    final expenses = await DatabaseHelper.instance.getExpensesByDate(
+      _selectedDate,
+    );
     setState(() {
-      _todayExpenses
+      _expensesByDate
         ..clear()
         ..addAll(expenses);
     });
@@ -104,7 +109,7 @@ class _HomeTabState extends State<HomeTab> {
     await DatabaseHelper.instance.insertExpense(expense);
 
     setState(() {
-      _todayExpenses.insert(0, expense);
+      _expensesByDate.insert(0, expense);
       _amountController.clear();
       _selectedCategory = null;
     });
@@ -113,11 +118,11 @@ class _HomeTabState extends State<HomeTab> {
   Future<void> _deleteExpense(String id) async {
     await DatabaseHelper.instance.deleteExpense(id);
     setState(() {
-      _todayExpenses.removeWhere((e) => e.id == id);
+      _expensesByDate.removeWhere((e) => e.id == id);
     });
   }
 
-  Future<void> _confirmRepay(Expense expense) async {
+  Future<void> _confirmDeleteExpense(Expense expense) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -141,6 +146,29 @@ class _HomeTabState extends State<HomeTab> {
     if (confirmed == true) {
       _deleteExpense(expense.id);
     }
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(), // disable future dates
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _loadExpensesByDate();
+      });
+    }
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   int? _selectedExpenseIndex;
@@ -187,9 +215,26 @@ class _HomeTabState extends State<HomeTab> {
                   height: 56, // matches TextField height
                   width: 100,
                   child: ElevatedButton(
-                    onPressed: _canAddExpense
-                        ? _addExpense
-                        : null, // 👈 disable logic
+                    onPressed: () {
+                      if (_canAddExpense) {
+                        _addExpense();
+                      } else {
+                        // Show info
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Please enter valid amount and select category',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _canAddExpense
+                          ? null
+                          : Colors.grey.shade200, // optional visual hint
+                    ),
                     child: const Text('Add'),
                   ),
                 ),
@@ -224,8 +269,8 @@ class _HomeTabState extends State<HomeTab> {
                 return ChoiceChip(
                   label: Text(category, style: TextStyle(fontSize: 10)),
                   selected: _selectedCategory == category,
-                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   onSelected: (_) {
                     setState(() {
@@ -240,13 +285,52 @@ class _HomeTabState extends State<HomeTab> {
 
             Row(
               children: [
-                const Text(
-                  'Today',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                IconButton(
+                  icon: const Icon(Icons.arrow_left),
+                  onPressed: () {
+                    setState(() {
+                      _selectedDate = _selectedDate.subtract(
+                        const Duration(days: 1),
+                      );
+                      _loadExpensesByDate();
+                    });
+                  },
                 ),
+                InkWell(
+                  onTap: _pickDate,
+                  child: Row(
+                    children: [
+                      Text(
+                        _isToday(_selectedDate)
+                            ? 'Today'
+                            : formatPrettyDate(_selectedDate),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(width: 4),
+                      const Icon(Icons.calendar_month, size: 18),
+                    ],
+                  ),
+                ),
+
+                if (!_isToday(_selectedDate))
+                  IconButton(
+                    icon: const Icon(Icons.arrow_right),
+                    onPressed: () {
+                      setState(() {
+                        _selectedDate = _selectedDate.add(
+                          const Duration(days: 1),
+                        );
+                        _loadExpensesByDate();
+                      });
+                    },
+                  ),
                 const Spacer(),
                 Text(
-                  '₹${totalExpenseAmountToday.toStringAsFixed(2)}',
+                  '₹${_expensesByDate.fold(0.0, (sum, e) => sum + e.amount).toStringAsFixed(2)}',
                   maxLines: 1,
                   softWrap: false,
                   style: const TextStyle(
@@ -261,7 +345,7 @@ class _HomeTabState extends State<HomeTab> {
 
             // DAILY EXPENSE HISTORY
             Expanded(
-              child: _todayExpenses.isEmpty
+              child: _expensesByDate.isEmpty
                   ? const Center(
                       child: Text(
                         'No expenses added today',
@@ -269,9 +353,9 @@ class _HomeTabState extends State<HomeTab> {
                       ),
                     )
                   : ListView.builder(
-                      itemCount: _todayExpenses.length,
+                      itemCount: _expensesByDate.length,
                       itemBuilder: (context, index) {
-                        final expense = _todayExpenses[index];
+                        final expense = _expensesByDate[index];
                         final isSelected = _selectedExpenseIndex == index;
 
                         return GestureDetector(
@@ -352,7 +436,9 @@ class _HomeTabState extends State<HomeTab> {
                                               ),
                                               splashRadius: 18,
                                               onPressed: () =>
-                                                  _confirmRepay(expense),
+                                                  _confirmDeleteExpense(
+                                                    expense,
+                                                  ),
                                             )
                                           : Align(
                                               key: const ValueKey('amount'),

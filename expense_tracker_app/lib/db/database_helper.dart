@@ -194,20 +194,21 @@ class DatabaseHelper {
     );
   }
 
-  // READ (today)
-  Future<List<Expense>> getTodayExpenses() async {
-    final db = await database;
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+  // READ (by date)
+  Future<List<Expense>> getExpensesByDate(DateTime date) async {
+  final db = await database;
+  final formattedDate = date.toIso8601String().substring(0, 10);
 
-    final result = await db.query(
-      'expenses',
-      where: "date LIKE ?",
-      whereArgs: ['$today%'],
-      orderBy: 'date DESC',
-    );
+  final result = await db.query(
+    'expenses',
+    where: "date LIKE ?",
+    whereArgs: ['$formattedDate%'],
+    orderBy: 'date DESC',
+  );
 
-    return result.map((e) => Expense.fromMap(e)).toList();
-  }
+  return result.map((e) => Expense.fromMap(e)).toList();
+}
+
 
   // DELETE
   Future<void> deleteExpense(String id) async {

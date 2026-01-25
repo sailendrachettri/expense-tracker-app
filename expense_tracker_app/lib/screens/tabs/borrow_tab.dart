@@ -186,9 +186,26 @@ class _BorrowTabState extends State<BorrowTab> {
                   height: 56, // matches TextField height
                   width: 100,
                   child: ElevatedButton(
-                    onPressed: _canAddBorrow
-                        ? _addBorrow
-                        : null, // 👈 disable logic
+                    onPressed: () {
+                      if (_canAddBorrow) {
+                        _addBorrow();
+                      } else {
+                        // Show info
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Please enter valid amount and select Borrowed from!',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _canAddBorrow
+                          ? null
+                          : Colors.grey.shade200, // optional visual hint
+                    ),
                     child: const Text('Add'),
                   ),
                 ),
