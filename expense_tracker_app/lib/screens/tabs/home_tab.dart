@@ -12,7 +12,16 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> {
   final TextEditingController _amountController = TextEditingController();
+  
   String? _selectedCategory;
+
+  double get totalExpenseAmountToday {
+  return _todayExpenses.fold(
+    0.0,
+    (sum, e) => sum + e.amount,
+  );
+}
+
 
   final List<Expense> _todayExpenses = [];
   List<String> _categories = [];
@@ -35,6 +44,7 @@ class _HomeTabState extends State<HomeTab> {
 
   void _showAddCategoryDialog() {
     final controller = TextEditingController();
+    
 
     showDialog(
       context: context,
@@ -184,9 +194,23 @@ class _HomeTabState extends State<HomeTab> {
 
             const SizedBox(height: 24),
 
-            const Text(
-              'Today',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                const Text(
+                  'Today',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                Text(
+                  '₹${totalExpenseAmountToday.toStringAsFixed(2)}',
+                  maxLines: 1,
+                  softWrap: false,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 10),
@@ -264,9 +288,7 @@ class _HomeTabState extends State<HomeTab> {
                                   ),
 
                                   // Amount / Delete
-                                  SizedBox(
-                                    width:
-                                        60, // 👈 lock width (tweak if needed)
+                                  IntrinsicWidth(
                                     child: AnimatedSwitcher(
                                       duration: const Duration(
                                         milliseconds: 200,
@@ -295,7 +317,7 @@ class _HomeTabState extends State<HomeTab> {
                                                 '₹${expense.amount.toStringAsFixed(2)}',
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.w600,
-                                                  fontSize: 18,
+                                                  fontSize: 17,
                                                 ),
                                               ),
                                             ),

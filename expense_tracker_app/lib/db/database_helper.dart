@@ -206,6 +206,24 @@ class DatabaseHelper {
     return result.map((e) => Expense.fromMap(e)).toList();
   }
 
+  // READ (today total expense)
+  Future<double> getTodayTotalAmount() async {
+    final db = await database;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+
+    final result = await db.rawQuery(
+      '''
+    SELECT SUM(amount) as total
+    FROM expenses
+    WHERE date LIKE ?
+    ''',
+      ['$today%'],
+    );
+
+    final total = result.first['total'] as double?;
+    return total ?? 0.0;
+  }
+
   // DELETE
   Future<void> deleteExpense(String id) async {
     final db = await database;

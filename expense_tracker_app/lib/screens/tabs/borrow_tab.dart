@@ -261,8 +261,7 @@ class _BorrowTabState extends State<BorrowTab> {
                                   ),
 
                                   // Amount / Delete switcher
-                                  SizedBox(
-                                    width: 56, // 👈 fixed width prevents shift
+                                  IntrinsicWidth(
                                     child: AnimatedSwitcher(
                                       duration: const Duration(
                                         milliseconds: 200,
@@ -288,8 +287,12 @@ class _BorrowTabState extends State<BorrowTab> {
                                               alignment: Alignment.centerRight,
                                               child: Text(
                                                 '₹${borrow.amount.toStringAsFixed(2)}',
+                                                maxLines: 1,
+                                                softWrap: false,
+                                                textAlign: TextAlign.right,
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.w600,
+                                                  fontSize: 17,
                                                 ),
                                               ),
                                             ),

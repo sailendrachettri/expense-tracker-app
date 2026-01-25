@@ -46,7 +46,7 @@ Widget build(BuildContext context) {
           ),
           SizedBox(height: 20),
           Text(
-            'Loading your data...',
+            'Loading your details...',
             style: TextStyle(fontSize: 16),
           ),
         ],
