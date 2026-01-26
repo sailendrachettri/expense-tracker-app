@@ -69,31 +69,34 @@ class _ReportsTabState extends State<ReportsTab> {
   }
 
   Widget _totalExpenseCard() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Total Expense',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '₹ ${_totalExpense.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.redAccent,
-              ),
-            ),
-          ],
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'TOTAL EXPENSE',
+          style: TextStyle(
+            fontSize: 12,
+            letterSpacing: 1.2,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
-    );
-  }
+        const SizedBox(height: 6),
+        Text(
+          '₹ ${_totalExpense.toStringAsFixed(2)}',
+          style: const TextStyle(
+            fontSize: 38,
+            fontWeight: FontWeight.w700,
+            color: Colors.lightBlue
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _monthlyExpenseChart() {
     final now = DateTime.now();
