@@ -218,7 +218,27 @@ class _HomeTabState extends State<HomeTab> {
                     onPressed: () {
                       if (_canAddExpense) {
                         _addExpense();
-                      } else {
+                      }
+                      else if(_amountController.text.isEmpty){
+                         ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Please enter a valid amount.',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      } else if(_selectedCategory == null){
+                         ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Please select category',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                       else {
                         // Show info
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(

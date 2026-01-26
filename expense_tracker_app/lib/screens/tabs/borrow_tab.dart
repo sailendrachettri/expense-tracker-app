@@ -189,7 +189,27 @@ class _BorrowTabState extends State<BorrowTab> {
                     onPressed: () {
                       if (_canAddBorrow) {
                         _addBorrow();
-                      } else {
+                      } else if(_amountController.text.isEmpty){
+                         ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Please enter a valid amount.',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      } else if(_selectedBorrower == null){
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Please select Borrowed from',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                      
+                       else {
                         // Show info
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
