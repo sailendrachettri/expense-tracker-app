@@ -13,7 +13,6 @@ class ReportsTab extends StatefulWidget {
 class _ReportsTabState extends State<ReportsTab> {
   double _totalExpense = 0;
   Map<String, double> _monthly = {};
-  Map<String, double> _categories = {};
   int? _selectedMonth; // 0–11
   Map<String, double> _filteredCategories = {};
   String _monthName(int index) {
@@ -50,7 +49,6 @@ class _ReportsTabState extends State<ReportsTab> {
     setState(() {
       _totalExpense = total;
       _monthly = monthly;
-      _categories = categories;
       _filteredCategories = categories; // default
       _selectedMonth = null;
     });
