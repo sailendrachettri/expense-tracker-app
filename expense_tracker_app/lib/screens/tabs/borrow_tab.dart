@@ -285,6 +285,10 @@ class _BorrowTabState extends State<BorrowTab> {
                           _selectedBorrower = null;
                         }
                       });
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('$person deleted')),
+                      );
                     }
                   },
                   child: ChoiceChip(

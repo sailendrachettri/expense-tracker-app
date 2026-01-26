@@ -218,27 +218,21 @@ class _HomeTabState extends State<HomeTab> {
                     onPressed: () {
                       if (_canAddExpense) {
                         _addExpense();
-                      }
-                      else if(_amountController.text.isEmpty){
-                         ScaffoldMessenger.of(context).showSnackBar(
+                      } else if (_amountController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text(
-                              'Please enter a valid amount.',
-                            ),
+                            content: Text('Please enter a valid amount.'),
                             duration: Duration(seconds: 2),
                           ),
                         );
-                      } else if(_selectedCategory == null){
-                         ScaffoldMessenger.of(context).showSnackBar(
+                      } else if (_selectedCategory == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text(
-                              'Please select category',
-                            ),
+                            content: Text('Please select category'),
                             duration: Duration(seconds: 2),
                           ),
                         );
-                      }
-                       else {
+                      } else {
                         // Show info
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -283,24 +277,6 @@ class _HomeTabState extends State<HomeTab> {
               ],
             ),
 
-            // Wrap(
-            //   spacing: 10,
-            //   children: _categories.map((category) {
-            //     return ChoiceChip(
-            //       label: Text(category, style: TextStyle(fontSize: 10)),
-            //       selected: _selectedCategory == category,
-            //       shape: RoundedRectangleBorder(
-            //         borderRadius: BorderRadius.circular(20),
-            //       ),
-            //       onSelected: (_) {
-            //         setState(() {
-            //           _selectedCategory = category;
-            //         });
-            //       },
-            //     );
-            //   }).toList(),
-            // ),
-
             Wrap(
               spacing: 10,
               children: _categories.map((category) {
@@ -338,6 +314,10 @@ class _HomeTabState extends State<HomeTab> {
                           _selectedCategory = null;
                         }
                       });
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('$category deleted')),
+                      );
                     }
                   },
                   child: ChoiceChip(
