@@ -323,6 +323,11 @@ class _HomeTabState extends State<HomeTab> {
                   child: ChoiceChip(
                     label: Text(category, style: const TextStyle(fontSize: 10)),
                     selected: _selectedCategory == category,
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: -1,
+                    ),
+
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
