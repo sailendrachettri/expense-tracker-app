@@ -177,7 +177,7 @@ class _HomeTabState extends State<HomeTab> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -212,7 +212,7 @@ class _HomeTabState extends State<HomeTab> {
 
                 // Add button
                 SizedBox(
-                  height: 56, // matches TextField height
+                  height: 46, // matches TextField height
                   width: 100,
                   child: ElevatedButton(
                     onPressed: () {

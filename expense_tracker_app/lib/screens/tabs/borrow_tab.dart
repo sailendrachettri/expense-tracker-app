@@ -183,7 +183,7 @@ class _BorrowTabState extends State<BorrowTab> {
 
                 // Add button
                 SizedBox(
-                  height: 56, // matches TextField height
+                  height: 46, // matches TextField height
                   width: 100,
                   child: ElevatedButton(
                     onPressed: () {
