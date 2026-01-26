@@ -120,7 +120,7 @@ class DatabaseHelper {
   }
 
   // ---------------------------------Borrowing---------------------------------
-  // GET BORROWERS: peoples 
+  // GET BORROWERS: peoples
   Future<List<String>> getBorrowers() async {
     final db = await database;
     final result = await db.query('borrowers', orderBy: 'name ASC');
@@ -142,7 +142,7 @@ class DatabaseHelper {
     await db.delete('borrowers', where: 'name = ?', whereArgs: [name]);
   }
 
-    // INSERT BORROW
+  // INSERT BORROW
   Future<void> insertBorrow(Borrow borrow) async {
     final db = await database;
     await db.insert('borrows', borrow.toMap());
@@ -196,23 +196,66 @@ class DatabaseHelper {
 
   // READ (by date)
   Future<List<Expense>> getExpensesByDate(DateTime date) async {
-  final db = await database;
-  final formattedDate = date.toIso8601String().substring(0, 10);
+    final db = await database;
+    final formattedDate = date.toIso8601String().substring(0, 10);
 
-  final result = await db.query(
-    'expenses',
-    where: "date LIKE ?",
-    whereArgs: ['$formattedDate%'],
-    orderBy: 'date DESC',
-  );
+    final result = await db.query(
+      'expenses',
+      where: "date LIKE ?",
+      whereArgs: ['$formattedDate%'],
+      orderBy: 'date DESC',
+    );
 
-  return result.map((e) => Expense.fromMap(e)).toList();
-}
-
+    return result.map((e) => Expense.fromMap(e)).toList();
+  }
 
   // DELETE
   Future<void> deleteExpense(String id) async {
     final db = await database;
     await db.delete('expenses', where: 'id = ?', whereArgs: [id]);
   }
+
+  /* Report for expense */
+  Future<double> getTotalExpense() async {
+  final db = await database;
+  final result = await db.rawQuery(
+    'SELECT SUM(amount) as total FROM expenses',
+  );
+  return (result.first['total'] as double?) ?? 0.0;
+}
+
+Future<Map<String, double>> getMonthlyExpenses() async {
+  final db = await database;
+
+  final result = await db.rawQuery('''
+    SELECT 
+      substr(date, 1, 7) as month,
+      SUM(amount) as total
+    FROM expenses
+    GROUP BY month
+    ORDER BY month ASC
+  ''');
+
+  return {
+    for (final row in result)
+      row['month'] as String: (row['total'] as double)
+  };
+}
+
+Future<Map<String, double>> getCategoryWiseExpense() async {
+  final db = await database;
+
+  final result = await db.rawQuery('''
+    SELECT category, SUM(amount) as total
+    FROM expenses
+    GROUP BY category
+    ORDER BY total DESC
+  ''');
+
+  return {
+    for (final row in result)
+      row['category'] as String: (row['total'] as double)
+  };
+}
+
 }
