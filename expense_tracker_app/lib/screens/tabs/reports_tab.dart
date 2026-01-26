@@ -14,6 +14,25 @@ class _ReportsTabState extends State<ReportsTab> {
   double _totalExpense = 0;
   Map<String, double> _monthly = {};
   Map<String, double> _categories = {};
+  int? _selectedMonth; // 0–11
+  Map<String, double> _filteredCategories = {};
+  String _monthName(int index) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[index];
+  }
 
   @override
   void initState() {
@@ -32,6 +51,8 @@ class _ReportsTabState extends State<ReportsTab> {
       _totalExpense = total;
       _monthly = monthly;
       _categories = categories;
+      _filteredCategories = categories; // default
+      _selectedMonth = null;
     });
   }
 
@@ -76,95 +97,149 @@ class _ReportsTabState extends State<ReportsTab> {
     );
   }
 
-Widget _monthlyExpenseChart() {
-  final now = DateTime.now();
-  final year = now.year;
+  Widget _monthlyExpenseChart() {
+    final now = DateTime.now();
+    final year = now.year;
 
-  // Prepare 12 months data (Jan–Dec)
-  final List<double> monthValues = List.filled(12, 0);
+    // Prepare 12 months data (Jan–Dec)
+    final List<double> monthValues = List.filled(12, 0);
 
-  _monthly.forEach((key, value) {
-    // key format: yyyy-MM
-    final month = int.parse(key.substring(5, 7));
-    monthValues[month - 1] = value;
-  });
+    _monthly.forEach((key, value) {
+      // key format: yyyy-MM
+      final month = int.parse(key.substring(5, 7));
+      monthValues[month - 1] = value;
+    });
 
-  final maxY =
-      monthValues.reduce((a, b) => a > b ? a : b).clamp(1.0, double.infinity);
+    final maxY = monthValues
+        .reduce((a, b) => a > b ? a : b)
+        .clamp(1.0, double.infinity);
 
-  return Card(
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Monthly Expense ($year)',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 240,
-            child: BarChart(
-              BarChartData(
-                maxY: maxY,
-                barGroups: List.generate(12, (index) {
-                  return BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: monthValues[index],
-                        width: 14,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ],
-                  );
-                }),
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Monthly Expense ($year)',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 240,
+              child: BarChart(
+                BarChartData(
+                  maxY: maxY,
 
-                gridData: FlGridData(show: false),
-                borderData: FlBorderData(show: false),
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    handleBuiltInTouches: true,
+                    touchCallback: (event, response) async {
+                      if (response == null ||
+                          response.spot == null ||
+                          !event.isInterestedForInteractions) {
+                        return;
+                      }
 
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
+                      final index = response.spot!.touchedBarGroupIndex;
+                      final now = DateTime.now();
+
+                      final data = await DatabaseHelper.instance
+                          .getCategoryWiseExpenseByMonth(now.year, index + 1);
+
+                      if (!mounted) return;
+
+                      setState(() {
+                        _selectedMonth = index;
+                        _filteredCategories = data;
+                      });
+                    },
+                    touchTooltipData: BarTouchTooltipData(
+                      tooltipBgColor: Colors.black87,
+                      getTooltipItem: (group, _, rod, __) {
                         const months = [
-                          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                          'Jan',
+                          'Feb',
+                          'Mar',
+                          'Apr',
+                          'May',
+                          'Jun',
+                          'Jul',
+                          'Aug',
+                          'Sep',
+                          'Oct',
+                          'Nov',
+                          'Dec',
                         ];
-
-                        if (value.toInt() < 0 || value.toInt() > 11) {
-                          return const SizedBox.shrink();
-                        }
-
-                        return Text(
-                          months[value.toInt()],
-                          style: const TextStyle(fontSize: 10),
+                        return BarTooltipItem(
+                          '${months[group.x.toInt()]}\n₹ ${rod.toY.toStringAsFixed(2)}',
+                          const TextStyle(color: Colors.white),
                         );
                       },
+                    ),
+                  ),
+
+                  barGroups: List.generate(12, (index) {
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: monthValues[index],
+                          width: 14,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ],
+                    );
+                  }),
+
+                  gridData: FlGridData(show: false),
+                  borderData: FlBorderData(show: false),
+
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          const months = [
+                            'Jan',
+                            'Feb',
+                            'Mar',
+                            'Apr',
+                            'May',
+                            'Jun',
+                            'Jul',
+                            'Aug',
+                            'Sep',
+                            'Oct',
+                            'Nov',
+                            'Dec',
+                          ];
+                          return Text(
+                            months[value.toInt()],
+                            style: const TextStyle(fontSize: 10),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _categoryReport() {
     return Card(
@@ -174,12 +249,18 @@ Widget _monthlyExpenseChart() {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Expense by Category',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            Text(
+              _selectedMonth == null
+                  ? 'Expense by Category (All Time)'
+                  : 'Expense by Category (${_monthName(_selectedMonth!)})',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            ..._categories.entries.map(
+
+            if (_filteredCategories.isEmpty)
+              const Text('No expense for this month'),
+
+            ..._filteredCategories.entries.map(
               (e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(

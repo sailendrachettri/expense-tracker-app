@@ -217,17 +217,17 @@ class DatabaseHelper {
 
   /* Report for expense */
   Future<double> getTotalExpense() async {
-  final db = await database;
-  final result = await db.rawQuery(
-    'SELECT SUM(amount) as total FROM expenses',
-  );
-  return (result.first['total'] as double?) ?? 0.0;
-}
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT SUM(amount) as total FROM expenses',
+    );
+    return (result.first['total'] as double?) ?? 0.0;
+  }
 
-Future<Map<String, double>> getMonthlyExpenses() async {
-  final db = await database;
+  Future<Map<String, double>> getMonthlyExpenses() async {
+    final db = await database;
 
-  final result = await db.rawQuery('''
+    final result = await db.rawQuery('''
     SELECT 
       substr(date, 1, 7) as month,
       SUM(amount) as total
@@ -236,26 +236,47 @@ Future<Map<String, double>> getMonthlyExpenses() async {
     ORDER BY month ASC
   ''');
 
-  return {
-    for (final row in result)
-      row['month'] as String: (row['total'] as double)
-  };
-}
+    return {
+      for (final row in result)
+        row['month'] as String: (row['total'] as double),
+    };
+  }
 
-Future<Map<String, double>> getCategoryWiseExpense() async {
-  final db = await database;
+  Future<Map<String, double>> getCategoryWiseExpense() async {
+    final db = await database;
 
-  final result = await db.rawQuery('''
+    final result = await db.rawQuery('''
     SELECT category, SUM(amount) as total
     FROM expenses
     GROUP BY category
     ORDER BY total DESC
   ''');
 
-  return {
-    for (final row in result)
-      row['category'] as String: (row['total'] as double)
-  };
-}
+    return {
+      for (final row in result)
+        row['category'] as String: (row['total'] as double),
+    };
+  }
 
+  Future<Map<String, double>> getCategoryWiseExpenseByMonth(
+    int year,
+    int month,
+  ) async {
+    final db = await database;
+    final monthStr = month.toString().padLeft(2, '0');
+    final yearMonth = '$year-$monthStr';
+
+    final result = await db.rawQuery('''
+    SELECT category, SUM(amount) as total
+    FROM expenses
+    WHERE date LIKE '$yearMonth%'
+    GROUP BY category
+    ORDER BY total DESC
+  ''');
+
+    return {
+      for (final row in result)
+        row['category'] as String: (row['total'] as double),
+    };
+  }
 }
