@@ -189,27 +189,21 @@ class _BorrowTabState extends State<BorrowTab> {
                     onPressed: () {
                       if (_canAddBorrow) {
                         _addBorrow();
-                      } else if(_amountController.text.isEmpty){
-                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Please enter a valid amount.',
-                            ),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      } else if(_selectedBorrower == null){
+                      } else if (_amountController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text(
-                              'Please select Borrowed from',
-                            ),
+                            content: Text('Please enter a valid amount.'),
                             duration: Duration(seconds: 2),
                           ),
                         );
-                      }
-                      
-                       else {
+                      } else if (_selectedBorrower == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please select Borrowed from'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      } else {
                         // Show info
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -257,17 +251,54 @@ class _BorrowTabState extends State<BorrowTab> {
             Wrap(
               spacing: 10,
               children: _borrowers.map((person) {
-                return ChoiceChip(
-                  label: Text(person, style: TextStyle(fontSize: 10)),
-                  selected: _selectedBorrower == person,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedBorrower = person;
-                    });
+                return GestureDetector(
+                  onLongPress: () async {
+                    final shouldDelete = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Delete borrower'),
+                        content: Text('Delete "$person"?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text(
+                              'Delete',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (shouldDelete == true) {
+                      await DatabaseHelper.instance.deleteBorrower(person);
+
+                      setState(() {
+                        _borrowers.remove(person);
+
+                        // reset selection if deleted borrower was selected
+                        if (_selectedBorrower == person) {
+                          _selectedBorrower = null;
+                        }
+                      });
+                    }
                   },
+                  child: ChoiceChip(
+                    label: Text(person, style: const TextStyle(fontSize: 10)),
+                    selected: _selectedBorrower == person,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedBorrower = person;
+                      });
+                    },
+                  ),
                 );
               }).toList(),
             ),
@@ -390,8 +421,8 @@ class _BorrowTabState extends State<BorrowTab> {
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                               ),
-                                             onPressed: () => _confirmRepay(borrow),
-
+                                              onPressed: () =>
+                                                  _confirmRepay(borrow),
                                             )
                                           : Align(
                                               key: const ValueKey('amount'),

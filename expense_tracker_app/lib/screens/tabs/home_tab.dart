@@ -283,20 +283,75 @@ class _HomeTabState extends State<HomeTab> {
               ],
             ),
 
+            // Wrap(
+            //   spacing: 10,
+            //   children: _categories.map((category) {
+            //     return ChoiceChip(
+            //       label: Text(category, style: TextStyle(fontSize: 10)),
+            //       selected: _selectedCategory == category,
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(20),
+            //       ),
+            //       onSelected: (_) {
+            //         setState(() {
+            //           _selectedCategory = category;
+            //         });
+            //       },
+            //     );
+            //   }).toList(),
+            // ),
+
             Wrap(
               spacing: 10,
               children: _categories.map((category) {
-                return ChoiceChip(
-                  label: Text(category, style: TextStyle(fontSize: 10)),
-                  selected: _selectedCategory == category,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedCategory = category;
-                    });
+                return GestureDetector(
+                  onLongPress: () async {
+                    final shouldDelete = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Delete Category'),
+                        content: Text('Delete "$category"?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text(
+                              'Delete',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (shouldDelete == true) {
+                      await DatabaseHelper.instance.deleteBorrower(category);
+
+                      setState(() {
+                        _categories.remove(category);
+
+                        // reset selection if deleted borrower was selected
+                        if (_selectedCategory == category) {
+                          _selectedCategory = null;
+                        }
+                      });
+                    }
                   },
+                  child: ChoiceChip(
+                    label: Text(category, style: const TextStyle(fontSize: 10)),
+                    selected: _selectedCategory == category,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedCategory = category;
+                      });
+                    },
+                  ),
                 );
               }).toList(),
             ),
