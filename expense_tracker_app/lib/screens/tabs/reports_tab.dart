@@ -39,6 +39,25 @@ class _ReportsTabState extends State<ReportsTab> {
     _loadReports();
   }
 
+  // Map of common categories → icons
+  final Map<String, IconData> _defaultCategoryIcons = {
+    'food': Icons.restaurant,
+    'groceries': Icons.shopping_cart,
+    'shopping': Icons.shopping_bag,
+    'taxi fare': Icons.local_taxi,
+    'sweets': Icons.cake,
+    'entertainment': Icons.movie,
+    'health': Icons.local_hospital,
+    'utilities': Icons.lightbulb,
+    'travel': Icons.flight,
+    'other': Icons.category,
+  };
+
+  IconData _categoryIcon(String category) {
+    // Try to find icon for lowercased category
+    return _defaultCategoryIcons[category.toLowerCase()] ?? Icons.category;
+  }
+
   Future<void> _loadReports() async {
     final db = DatabaseHelper.instance;
 
@@ -69,34 +88,33 @@ class _ReportsTabState extends State<ReportsTab> {
   }
 
   Widget _totalExpenseCard() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'TOTAL EXPENSE',
-          style: TextStyle(
-            fontSize: 12,
-            letterSpacing: 1.2,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w600,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'TOTAL EXPENSE',
+            style: TextStyle(
+              fontSize: 12,
+              letterSpacing: 1.2,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '₹ ${_totalExpense.toStringAsFixed(2)}',
-          style: const TextStyle(
-            fontSize: 38,
-            fontWeight: FontWeight.w700,
-            color: Colors.lightBlue
+          const SizedBox(height: 6),
+          Text(
+            '₹ ${_totalExpense.toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontSize: 38,
+              fontWeight: FontWeight.w700,
+              color: Colors.lightBlue,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 
   Widget _monthlyExpenseChart() {
     final now = DateTime.now();
@@ -243,42 +261,107 @@ class _ReportsTabState extends State<ReportsTab> {
   }
 
   Widget _categoryReport() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _selectedMonth == null
-                  ? 'Expense by Category (All Time)'
-                  : 'Expense by Category (${_monthName(_selectedMonth!)})',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
+    final total = _filteredCategories.values.fold(0.0, (a, b) => a + b);
 
-            if (_filteredCategories.isEmpty)
-              const Text('No expense for this month'),
-
-            ..._filteredCategories.entries.map(
-              (e) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(e.key),
-                    Text(
-                      '₹ ${e.value.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _selectedMonth == null
+              ? 'Expense by Category (All Time)'
+              : 'Expense by Category (${_monthName(_selectedMonth!)})',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-      ),
+        const SizedBox(height: 12),
+
+        if (_filteredCategories.isEmpty)
+          const Text('No expense for this period'),
+
+        ..._filteredCategories.entries.map((e) {
+          final percent = total == 0 ? 0.0 : (e.value / total);
+          final percentText = (percent * 100).toStringAsFixed(1);
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.grey.shade200,
+                  child: Icon(
+                    _categoryIcon(e.key),
+                    size: 16,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Expanded column for label, percentage, progress
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Row: Category + Percentage + Amount
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                e.key,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$percentText%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '₹ ${e.value.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      // Progress bar below the row
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: LinearProgressIndicator(
+                              value: percent,
+                              minHeight: 6,
+                              backgroundColor: Colors.grey.shade300,
+                              valueColor: const AlwaysStoppedAnimation(
+                                Colors.blue,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 }
