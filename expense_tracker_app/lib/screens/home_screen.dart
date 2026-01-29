@@ -13,11 +13,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomeTab(),
-    BorrowTab(),
-    ReportsTab(),
-  ];
+  final List<Widget> _pages = const [HomeTab(), BorrowTab(), ReportsTab()];
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +22,12 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
+        selectedItemColor: Colors.green, // selected icon & label color
+        unselectedItemColor: Colors.grey.shade600,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.swap_horiz),
+            icon: Icon(Icons.currency_rupee),
             label: 'Borrow',
           ),
           BottomNavigationBarItem(

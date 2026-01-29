@@ -195,6 +195,7 @@ class _HomeTabState extends State<HomeTab> {
                   child: TextField(
                     controller: _amountController,
                     keyboardType: TextInputType.number,
+
                     decoration: InputDecoration(
                       prefixText: '₹ ',
                       labelText: 'Amount (INR)',
@@ -202,6 +203,20 @@ class _HomeTabState extends State<HomeTab> {
                       fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
+                      ),
+                      floatingLabelStyle: TextStyle(color: Colors.green),
+
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: Color.fromARGB(
+                            184,
+                            111,
+                            215,
+                            115,
+                          ), // border when focused
+                          width: 2, // thicker border on focus (optional)
+                        ),
                       ),
                     ),
                     onChanged: (_) => setState(() {}),
@@ -249,7 +264,14 @@ class _HomeTabState extends State<HomeTab> {
                           ? null
                           : Colors.grey.shade200, // optional visual hint
                     ),
-                    child: const Text('Add'),
+                    child: const Text(
+                      'Add',
+                      style: TextStyle(
+                        color: Colors.green, // change to any color you want
+                        fontWeight: FontWeight.bold, // optional
+                        fontSize: 16, // optional
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -266,88 +288,119 @@ class _HomeTabState extends State<HomeTab> {
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
                 const SizedBox(width: 10),
-                InkWell(
-                  onTap: _showAddCategoryDialog,
-                  borderRadius: BorderRadius.circular(999),
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(Icons.add_circle, size: 17),
-                  ),
-                ),
               ],
             ),
 
-            Wrap(
-              spacing: 10,
-              children: _categories.map((category) {
-                return GestureDetector(
-                  onLongPress: () async {
-                    final shouldDelete = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Delete Category'),
-                        content: Text('Delete "$category"?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text(
-                              'Delete',
-                              style: TextStyle(color: Colors.red),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  ..._categories.map((category) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: GestureDetector(
+                        onLongPress: () async {
+                          final shouldDelete = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Category'),
+                              content: Text('Delete "$category"?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text(
+                                    'Delete',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (shouldDelete == true) {
+                            await DatabaseHelper.instance.deleteBorrower(
+                              category,
+                            );
+
+                            setState(() {
+                              _categories.remove(category);
+                              if (_selectedCategory == category) {
+                                _selectedCategory = null;
+                              }
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('$category deleted')),
+                            );
+                          }
+                        },
+                        child: ChoiceChip(
+                          label: Text(
+                            category,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: _selectedCategory == category
+                                  ? Colors.green
+                                  : Colors.black,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ],
+                          selected: _selectedCategory == category,
+                          backgroundColor: Colors.white,
+                          selectedColor: const Color.fromARGB(
+                            255,
+                            227,
+                            238,
+                            228,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: const BorderSide(
+                              color: Colors.green,
+                              width: 0.5,
+                            ),
+                          ),
+                          onSelected: (_) {
+                            setState(() {
+                              _selectedCategory = category;
+                            });
+                          },
+                        ),
                       ),
                     );
+                  }),
 
-                    if (shouldDelete == true) {
-                      await DatabaseHelper.instance.deleteBorrower(category);
-
-                      setState(() {
-                        _categories.remove(category);
-
-                        // reset selection if deleted borrower was selected
-                        if (_selectedCategory == category) {
-                          _selectedCategory = null;
-                        }
-                      });
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('$category deleted')),
-                      );
-                    }
-                  },
-                  child: ChoiceChip(
-                    label: Text(category, style: const TextStyle(fontSize: 10)),
-                    selected: _selectedCategory == category,
-                    labelPadding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: -1,
+                  // ➕ ADD CATEGORY BUTTON (scrolls with chips)
+                  InkWell(
+                    onTap: _showAddCategoryDialog,
+                    borderRadius: BorderRadius.circular(999),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 6),
+                      child: Icon(
+                        Icons.add_circle,
+                        size: 17,
+                        color: Colors.green,
+                      ),
                     ),
-
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    onSelected: (_) {
-                      setState(() {
-                        _selectedCategory = category;
-                      });
-                    },
                   ),
-                );
-              }).toList(),
+                ],
+              ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_left),
-                  onPressed: () {
+                // ◀ Previous day
+                InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () {
                     setState(() {
                       _selectedDate = _selectedDate.subtract(
                         const Duration(days: 1),
@@ -355,7 +408,24 @@ class _HomeTabState extends State<HomeTab> {
                       _loadExpensesByDate();
                     });
                   },
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.green, width: 1),
+                    ),
+                    child: const Icon(
+                      Icons.chevron_left,
+                      color: Colors.green,
+                      size: 14,
+                    ),
+                  ),
                 ),
+
+                const SizedBox(width: 8),
+
+                // 📅 Date selector
                 InkWell(
                   onTap: _pickDate,
                   child: Row(
@@ -369,17 +439,19 @@ class _HomeTabState extends State<HomeTab> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
                       const SizedBox(width: 4),
                       const Icon(Icons.calendar_month, size: 18),
                     ],
                   ),
                 ),
 
+                const SizedBox(width: 8),
+
+                // ▶ Next day
                 if (!_isToday(_selectedDate))
-                  IconButton(
-                    icon: const Icon(Icons.arrow_right),
-                    onPressed: () {
+                  InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
                       setState(() {
                         _selectedDate = _selectedDate.add(
                           const Duration(days: 1),
@@ -387,21 +459,38 @@ class _HomeTabState extends State<HomeTab> {
                         _loadExpensesByDate();
                       });
                     },
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.green, width: 1),
+                      ),
+                      child: const Icon(
+                        Icons.chevron_right_outlined,
+                        color: Colors.green,
+                        size: 14,
+                      ),
+                    ),
                   ),
+
                 const Spacer(),
+
+                // 💰 Total amount
                 Text(
                   '₹${_expensesByDate.fold(0.0, (sum, e) => sum + e.amount).toStringAsFixed(2)}',
                   maxLines: 1,
                   softWrap: false,
                   style: const TextStyle(
                     fontSize: 19,
+                    color: Colors.green,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
 
             // DAILY EXPENSE HISTORY
             Expanded(
@@ -440,10 +529,10 @@ class _HomeTabState extends State<HomeTab> {
                                   // Icon
                                   CircleAvatar(
                                     radius: 22,
-                                    backgroundColor: Colors.teal.shade100,
+                                    backgroundColor: Colors.green.shade100,
                                     child: const Icon(
                                       Icons.currency_rupee,
-                                      color: Colors.teal,
+                                      color: Colors.green,
                                       size: 20,
                                     ),
                                   ),

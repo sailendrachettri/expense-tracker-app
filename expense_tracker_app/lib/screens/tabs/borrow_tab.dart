@@ -144,6 +144,14 @@ class _BorrowTabState extends State<BorrowTab> {
     }
   }
 
+  Map<String, List<Borrow>> _groupBorrowsByPerson() {
+    final Map<String, List<Borrow>> map = {};
+    for (final borrow in _borrows) {
+      map.putIfAbsent(borrow.person, () => []).add(borrow);
+    }
+    return map;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -220,7 +228,14 @@ class _BorrowTabState extends State<BorrowTab> {
                           ? null
                           : Colors.grey.shade200, // optional visual hint
                     ),
-                    child: const Text('Add'),
+                    child: const Text(
+                      'Add',
+                      style: TextStyle(
+                        color: Colors.green, // change to any color you want
+                        fontWeight: FontWeight.bold, // optional
+                        fontSize: 16, // optional
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -292,10 +307,38 @@ class _BorrowTabState extends State<BorrowTab> {
                     }
                   },
                   child: ChoiceChip(
-                    label: Text(person, style: const TextStyle(fontSize: 10)),
+                    label: Text(
+                      person,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: _selectedBorrower == person
+                            ? Colors.green
+                            : Colors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     selected: _selectedBorrower == person,
+                    backgroundColor: const Color.fromARGB(
+                      227,
+                      255,
+                      255,
+                      255,
+                    ), // unselected bg
+                    selectedColor: const Color.fromARGB(
+                      255,
+                      227,
+                      238,
+                      228,
+                    ), // selected bg
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(
+                        color: Color.fromARGB(255,
+                      227,
+                      238,
+                      228,), // border stays green always
+                        width: 0.5, // optional thickness
+                      ),
                     ),
                     onSelected: (_) {
                       setState(() {
@@ -323,6 +366,7 @@ class _BorrowTabState extends State<BorrowTab> {
                   style: const TextStyle(
                     fontSize: 19,
                     fontWeight: FontWeight.w600,
+                    color: Colors.green,
                   ),
                 ),
               ],
@@ -339,117 +383,253 @@ class _BorrowTabState extends State<BorrowTab> {
                         style: TextStyle(color: Colors.grey),
                       ),
                     )
-                  : ListView.builder(
-                      itemCount: _borrows.length,
-                      itemBuilder: (context, index) {
-                        final borrow = _borrows[index];
-                        final isSelected = _selectedBorrowIndex == index;
+                  : ListView(
+                      children: _groupBorrowsByPerson().entries.map((entry) {
+                        final borrower = entry.key;
+                        final borrowsForPerson = entry.value;
 
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedBorrowIndex = isSelected ? null : index;
-                            });
-                          },
-                          child: Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                        double totalAmount = borrowsForPerson.fold(
+                          0.0,
+                          (sum, b) => sum + b.amount,
+                        );
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              dividerColor: Colors
+                                  .transparent, // hides the top/bottom line
                             ),
-                            elevation: isSelected ? 3 : 1.5,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              child: Row(
+                            child: ExpansionTile(
+                              key: PageStorageKey(borrower),
+                              title: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  // Avatar
-                                  CircleAvatar(
-                                    backgroundColor: Colors.orange.shade100,
-                                    child: const Icon(
-                                      Icons.person,
-                                      color: Colors.orange,
+                                  Text(
+                                    borrower,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
                                     ),
                                   ),
-
-                                  const SizedBox(width: 12),
-
-                                  // Person + time
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          borrow.person,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        Text(
-                                          formatExpenseTime(borrow.date),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Amount / Delete switcher
-                                  IntrinsicWidth(
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      transitionBuilder: (child, animation) =>
-                                          ScaleTransition(
-                                            scale: animation,
-                                            child: child,
-                                          ),
-                                      child: isSelected
-                                          ? TextButton.icon(
-                                              key: const ValueKey('pay'),
-                                              icon: const Icon(
-                                                Icons.payments_outlined,
-                                                color: Colors.green,
-                                                size: 20,
-                                              ),
-                                              label: const Text(
-                                                'Pay',
-                                                style: TextStyle(
-                                                  color: Colors.green,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              onPressed: () =>
-                                                  _confirmRepay(borrow),
-                                            )
-                                          : Align(
-                                              key: const ValueKey('amount'),
-                                              alignment: Alignment.centerRight,
-                                              child: Text(
-                                                '₹${borrow.amount.toStringAsFixed(2)}',
-                                                maxLines: 1,
-                                                softWrap: false,
-                                                textAlign: TextAlign.right,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 17,
-                                                ),
-                                              ),
-                                            ),
+                                  Text(
+                                    '₹${totalAmount.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                      color: Colors.black,
                                     ),
                                   ),
                                 ],
                               ),
+                              children: [
+                                // PAY ALL BUTTON
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 4,
+                                  ),
+                                  child: Align(
+                                    alignment: Alignment.center,
+                                    child: ElevatedButton.icon(
+                                      icon: const Icon(
+                                        Icons.payments_outlined,
+                                        color: Colors.green,
+                                        size: 18,
+                                      ),
+                                      label: const Text(
+                                        'Pay All',
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        minimumSize: const Size(100, 36),
+                                      ),
+                                      onPressed: () async {
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (_) => AlertDialog(
+                                            title: const Text(
+                                              'Pay Full Amount?',
+                                            ),
+                                            content: Text(
+                                              'Have you repaid the full amount of ₹${totalAmount.toStringAsFixed(2)} to $borrower?',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  false,
+                                                ),
+                                                child: const Text('Cancel'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  true,
+                                                ),
+                                                child: const Text('Yes, Paid'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+
+                                        if (confirmed == true) {
+                                          // Delete all borrows for this borrower
+                                          for (final b in borrowsForPerson) {
+                                            await _deleteBorrow(b.id);
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+
+                                // INDIVIDUAL BORROWS
+                                ...borrowsForPerson.asMap().entries.map((e) {
+                                  final index = e.key;
+                                  final borrow = e.value;
+                                  final isSelected =
+                                      _selectedBorrowIndex ==
+                                      borrow.id.hashCode;
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedBorrowIndex = isSelected
+                                            ? null
+                                            : borrow.id.hashCode;
+                                      });
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 4,
+                                      ),
+                                      child: Card(
+                                        color: isSelected
+                                            ? Colors.grey.shade100
+                                            : Colors.grey.shade200,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        elevation: isSelected ? 2 : 0,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 10,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              CircleAvatar(
+                                                backgroundColor:
+                                                    Colors.green.shade100,
+                                                child: const Icon(
+                                                  Icons.person,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      formatExpenseTime(
+                                                        borrow.date,
+                                                      ),
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors
+                                                            .grey
+                                                            .shade600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              IntrinsicWidth(
+                                                child: AnimatedSwitcher(
+                                                  duration: const Duration(
+                                                    milliseconds: 200,
+                                                  ),
+                                                  transitionBuilder:
+                                                      (child, animation) =>
+                                                          ScaleTransition(
+                                                            scale: animation,
+                                                            child: child,
+                                                          ),
+                                                  child: isSelected
+                                                      ? TextButton.icon(
+                                                          key: const ValueKey(
+                                                            'pay',
+                                                          ),
+                                                          icon: const Icon(
+                                                            Icons
+                                                                .payments_outlined,
+                                                            color: Colors.green,
+                                                            size: 20,
+                                                          ),
+                                                          label: const Text(
+                                                            'Pay',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.green,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
+                                                          ),
+                                                          onPressed: () =>
+                                                              _confirmRepay(
+                                                                borrow,
+                                                              ),
+                                                        )
+                                                      : Align(
+                                                          key: const ValueKey(
+                                                            'amount',
+                                                          ),
+                                                          alignment: Alignment
+                                                              .centerRight,
+                                                          child: Text(
+                                                            '₹${borrow.amount.toStringAsFixed(2)}',
+                                                            maxLines: 1,
+                                                            softWrap: false,
+                                                            textAlign:
+                                                                TextAlign.right,
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  fontSize: 17,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
                             ),
                           ),
                         );
-                      },
+                      }).toList(),
                     ),
             ),
           ],

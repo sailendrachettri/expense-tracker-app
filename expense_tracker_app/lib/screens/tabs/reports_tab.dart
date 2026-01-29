@@ -98,7 +98,7 @@ class _ReportsTabState extends State<ReportsTab> {
             style: TextStyle(
               fontSize: 12,
               letterSpacing: 1.2,
-              color: Colors.grey.shade600,
+              color: Colors.green.shade400,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -108,7 +108,7 @@ class _ReportsTabState extends State<ReportsTab> {
             style: const TextStyle(
               fontSize: 38,
               fontWeight: FontWeight.w700,
-              color: Colors.lightBlue,
+              color: Color.fromARGB(255, 115, 214, 119),
             ),
           ),
         ],
@@ -206,6 +206,7 @@ class _ReportsTabState extends State<ReportsTab> {
                         BarChartRodData(
                           toY: monthValues[index],
                           width: 14,
+                          color: Color.fromARGB(255, 115, 214, 119),
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ],
@@ -289,11 +290,11 @@ class _ReportsTabState extends State<ReportsTab> {
                 // Icon
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: Colors.grey.shade200,
+                  backgroundColor: const Color.fromARGB(155, 185, 246, 202),
                   child: Icon(
                     _categoryIcon(e.key),
                     size: 16,
-                    color: Colors.black87,
+                    color: Colors.green,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -331,6 +332,7 @@ class _ReportsTabState extends State<ReportsTab> {
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
+                              color: Colors.green
                             ),
                           ),
                         ],
@@ -348,7 +350,7 @@ class _ReportsTabState extends State<ReportsTab> {
                               minHeight: 6,
                               backgroundColor: Colors.grey.shade300,
                               valueColor: const AlwaysStoppedAnimation(
-                                Colors.blue,
+                                Color.fromARGB(255, 115, 214, 119),
                               ),
                             ),
                           );
