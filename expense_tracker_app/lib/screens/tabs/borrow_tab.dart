@@ -179,6 +179,24 @@ class _BorrowTabState extends State<BorrowTab> {
                       labelText: 'Amount (INR)',
                       filled: true,
                       fillColor: Colors.grey.shade100,
+                      labelStyle: const TextStyle(color: Colors.green),
+                      floatingLabelStyle: const TextStyle(color: Colors.green),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: Colors.green,
+                          width: 1.5,
+                        ),
+                      ),
+
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: Color.fromARGB(184, 111, 215, 115),
+                          width: 2,
+                        ),
+                      ),
+
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -247,107 +265,122 @@ class _BorrowTabState extends State<BorrowTab> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Text(
-                  'Borrowed From',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  'Who did you borrow from?',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
                 ),
                 const SizedBox(width: 10),
-                InkWell(
-                  onTap: _showAddBorrowerDialog,
-                  borderRadius: BorderRadius.circular(999),
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(Icons.add_circle, size: 17),
-                  ),
-                ),
               ],
             ),
 
             // Borrower selector (like category chips)
-            Wrap(
-              spacing: 10,
-              children: _borrowers.map((person) {
-                return GestureDetector(
-                  onLongPress: () async {
-                    final shouldDelete = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Delete borrower'),
-                        content: Text('Delete "$person"?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text(
-                              'Delete',
-                              style: TextStyle(color: Colors.red),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  ..._borrowers.map((person) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: GestureDetector(
+                        onLongPress: () async {
+                          final shouldDelete = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Borrower'),
+                              content: Text('Delete "$person"?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text(
+                                    'Delete',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (shouldDelete == true) {
+                            await DatabaseHelper.instance.deleteBorrower(
+                              person,
+                            );
+
+                            setState(() {
+                              _borrowers.remove(person);
+                              if (_selectedBorrower == person) {
+                                _selectedBorrower = null;
+                              }
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('$person deleted')),
+                            );
+                          }
+                        },
+                        child: ChoiceChip(
+                          label: Text(
+                            person,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: _selectedBorrower == person
+                                  ? Colors.green
+                                  : Colors.black,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ],
+                          selected: _selectedBorrower == person,
+                          backgroundColor: Colors.white,
+                          checkmarkColor: Colors.green,
+                          selectedColor: const Color.fromARGB(
+                            255,
+                            227,
+                            238,
+                            228,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: const BorderSide(
+                              color: Colors.green,
+                              width: 0.8,
+                            ),
+                          ),
+                          onSelected: (_) {
+                            setState(() {
+                              _selectedBorrower = person;
+                            });
+                          },
+                        ),
                       ),
                     );
+                  }),
 
-                    if (shouldDelete == true) {
-                      await DatabaseHelper.instance.deleteBorrower(person);
-
-                      setState(() {
-                        _borrowers.remove(person);
-
-                        // reset selection if deleted borrower was selected
-                        if (_selectedBorrower == person) {
-                          _selectedBorrower = null;
-                        }
-                      });
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('$person deleted')),
-                      );
-                    }
-                  },
-                  child: ChoiceChip(
-                    label: Text(
-                      person,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: _selectedBorrower == person
-                            ? Colors.green
-                            : Colors.black,
-                        fontWeight: FontWeight.w500,
+                  // ➕ Add borrower (same style as category add)
+                  Material(
+                    color: Colors.transparent, // keep background clean
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: _showAddBorrowerDialog,
+                      customBorder:
+                          const CircleBorder(), // 👈 forces circular ripple
+                      child: const Padding(
+                        padding: EdgeInsets.all(
+                          6,
+                        ), // equal padding = perfect circle
+                        child: Icon(
+                          Icons.add_circle,
+                          size: 17,
+                          color: Colors.green,
+                        ),
                       ),
                     ),
-                    selected: _selectedBorrower == person,
-                    backgroundColor: const Color.fromARGB(
-                      227,
-                      255,
-                      255,
-                      255,
-                    ), // unselected bg
-                    selectedColor: const Color.fromARGB(
-                      255,
-                      227,
-                      238,
-                      228,
-                    ), // selected bg
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: const BorderSide(
-                        color: Color.fromARGB(255,
-                      227,
-                      238,
-                      228,), // border stays green always
-                        width: 0.5, // optional thickness
-                      ),
-                    ),
-                    onSelected: (_) {
-                      setState(() {
-                        _selectedBorrower = person;
-                      });
-                    },
                   ),
-                );
-              }).toList(),
+                ],
+              ),
             ),
 
             const SizedBox(height: 24),

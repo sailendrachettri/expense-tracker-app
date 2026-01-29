@@ -383,15 +383,34 @@ class _HomeTabState extends State<HomeTab> {
                     );
                   }),
 
-                  InkWell(
-                    onTap: _showAddCategoryDialog,
-                    borderRadius: BorderRadius.circular(999),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(
-                        Icons.add_circle,
-                        size: 17,
-                        color: Colors.green,
+                  // InkWell(
+                  //   onTap: _showAddCategoryDialog,
+                  //   borderRadius: BorderRadius.circular(999),
+                  //   child: const Padding(
+                  //     padding: EdgeInsets.symmetric(horizontal: 6),
+                  //     child: Icon(
+                  //       Icons.add_circle,
+                  //       size: 17,
+                  //       color: Colors.green,
+                  //     ),
+                  //   ),
+                  // ),
+                  Material(
+                    color: Colors.transparent, // keep background clean
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: _showAddCategoryDialog,
+                      customBorder:
+                          const CircleBorder(), // 👈 forces circular ripple
+                      child: const Padding(
+                        padding: EdgeInsets.all(
+                          6,
+                        ), // equal padding = perfect circle
+                        child: Icon(
+                          Icons.add_circle,
+                          size: 17,
+                          color: Colors.green,
+                        ),
                       ),
                     ),
                   ),
