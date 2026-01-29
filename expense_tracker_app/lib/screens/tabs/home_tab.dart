@@ -528,12 +528,12 @@ class _HomeTabState extends State<HomeTab> {
                               child: Row(
                                 children: [
                                   CircleAvatar(
-                                    radius: 22,
+                                    radius: 19,
                                     backgroundColor: Colors.green.shade100,
                                     child: const Icon(
                                       Icons.currency_rupee,
                                       color: Colors.green,
-                                      size: 20,
+                                      size: 16,
                                     ),
                                   ),
 
