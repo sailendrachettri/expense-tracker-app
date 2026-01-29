@@ -153,7 +153,7 @@ class _HomeTabState extends State<HomeTab> {
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(), // disable future dates
+      lastDate: DateTime.now(),
     );
 
     if (picked != null) {
@@ -190,7 +190,6 @@ class _HomeTabState extends State<HomeTab> {
 
             Row(
               children: [
-                // Amount input
                 Expanded(
                   child: TextField(
                     controller: _amountController,
@@ -199,35 +198,43 @@ class _HomeTabState extends State<HomeTab> {
                     decoration: InputDecoration(
                       prefixText: '₹ ',
                       labelText: 'Amount (INR)',
+
                       filled: true,
                       fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(
+
+                      floatingLabelBehavior: FloatingLabelBehavior.auto,
+                      labelStyle: const TextStyle(color: Colors.green),
+                      floatingLabelStyle: const TextStyle(color: Colors.green),
+
+                      enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: Colors.green,
+                          width: 1.5,
+                        ),
                       ),
-                      floatingLabelStyle: TextStyle(color: Colors.green),
 
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: const BorderSide(
-                          color: Color.fromARGB(
-                            184,
-                            111,
-                            215,
-                            115,
-                          ), // border when focused
-                          width: 2, // thicker border on focus (optional)
+                          color: Color.fromARGB(184, 111, 215, 115),
+                          width: 2,
                         ),
                       ),
+
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
+
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
 
                 const SizedBox(width: 12),
 
-                // Add button
                 SizedBox(
-                  height: 46, // matches TextField height
+                  height: 46,
                   width: 100,
                   child: ElevatedButton(
                     onPressed: () {
@@ -248,7 +255,6 @@ class _HomeTabState extends State<HomeTab> {
                           ),
                         );
                       } else {
-                        // Show info
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
@@ -262,14 +268,14 @@ class _HomeTabState extends State<HomeTab> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _canAddExpense
                           ? null
-                          : Colors.grey.shade200, // optional visual hint
+                          : Colors.grey.shade200,
                     ),
                     child: const Text(
                       'Add',
                       style: TextStyle(
-                        color: Colors.green, // change to any color you want
-                        fontWeight: FontWeight.bold, // optional
-                        fontSize: 16, // optional
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
                   ),
@@ -285,7 +291,7 @@ class _HomeTabState extends State<HomeTab> {
               children: [
                 const Text(
                   'Select Category',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
                 ),
                 const SizedBox(width: 10),
               ],
@@ -353,6 +359,7 @@ class _HomeTabState extends State<HomeTab> {
                           ),
                           selected: _selectedCategory == category,
                           backgroundColor: Colors.white,
+                          checkmarkColor: Colors.green,
                           selectedColor: const Color.fromARGB(
                             255,
                             227,
@@ -363,7 +370,7 @@ class _HomeTabState extends State<HomeTab> {
                             borderRadius: BorderRadius.circular(20),
                             side: const BorderSide(
                               color: Colors.green,
-                              width: 0.5,
+                              width: 0.8,
                             ),
                           ),
                           onSelected: (_) {
@@ -376,7 +383,6 @@ class _HomeTabState extends State<HomeTab> {
                     );
                   }),
 
-                  // ➕ ADD CATEGORY BUTTON (scrolls with chips)
                   InkWell(
                     onTap: _showAddCategoryDialog,
                     borderRadius: BorderRadius.circular(999),
@@ -397,7 +403,6 @@ class _HomeTabState extends State<HomeTab> {
 
             Row(
               children: [
-                // ◀ Previous day
                 InkWell(
                   borderRadius: BorderRadius.circular(20),
                   onTap: () {
@@ -425,7 +430,6 @@ class _HomeTabState extends State<HomeTab> {
 
                 const SizedBox(width: 8),
 
-                // 📅 Date selector
                 InkWell(
                   onTap: _pickDate,
                   child: Row(
@@ -435,7 +439,7 @@ class _HomeTabState extends State<HomeTab> {
                             ? 'Today'
                             : formatPrettyDate(_selectedDate),
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 17,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -447,7 +451,6 @@ class _HomeTabState extends State<HomeTab> {
 
                 const SizedBox(width: 8),
 
-                // ▶ Next day
                 if (!_isToday(_selectedDate))
                   InkWell(
                     borderRadius: BorderRadius.circular(20),
@@ -476,7 +479,6 @@ class _HomeTabState extends State<HomeTab> {
 
                 const Spacer(),
 
-                // 💰 Total amount
                 Text(
                   '₹${_expensesByDate.fold(0.0, (sum, e) => sum + e.amount).toStringAsFixed(2)}',
                   maxLines: 1,
@@ -492,7 +494,6 @@ class _HomeTabState extends State<HomeTab> {
 
             const SizedBox(height: 20),
 
-            // DAILY EXPENSE HISTORY
             Expanded(
               child: _expensesByDate.isEmpty
                   ? const Center(
@@ -526,7 +527,6 @@ class _HomeTabState extends State<HomeTab> {
                               ),
                               child: Row(
                                 children: [
-                                  // Icon
                                   CircleAvatar(
                                     radius: 22,
                                     backgroundColor: Colors.green.shade100,
@@ -539,7 +539,6 @@ class _HomeTabState extends State<HomeTab> {
 
                                   const SizedBox(width: 12),
 
-                                  // Category + Time
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -552,7 +551,7 @@ class _HomeTabState extends State<HomeTab> {
                                             fontSize: 15,
                                           ),
                                         ),
-                                        // const SizedBox(height: 2),
+
                                         Text(
                                           formatExpenseTime(expense.date),
                                           style: TextStyle(
@@ -564,7 +563,6 @@ class _HomeTabState extends State<HomeTab> {
                                     ),
                                   ),
 
-                                  // Amount / Delete
                                   IntrinsicWidth(
                                     child: AnimatedSwitcher(
                                       duration: const Duration(
@@ -610,15 +608,6 @@ class _HomeTabState extends State<HomeTab> {
                       },
                     ),
             ),
-
-            // if (_canAddExpense)
-            //   SizedBox(
-            //     width: double.infinity,
-            //     child: ElevatedButton(
-            //       onPressed: _addExpense,
-            //       child: const Text('Add Expense'),
-            //     ),
-            //   ),
           ],
         ),
       ),
