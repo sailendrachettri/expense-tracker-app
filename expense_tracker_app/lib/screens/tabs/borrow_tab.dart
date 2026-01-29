@@ -443,12 +443,25 @@ class _BorrowTabState extends State<BorrowTab> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    borrower,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
-                                    ),
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: Colors.green.shade100,
+                                        child: const Icon(
+                                          Icons.people_outline_outlined,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        borrower,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   Text(
                                     '₹${totalAmount.toStringAsFixed(2)}',
@@ -548,14 +561,14 @@ class _BorrowTabState extends State<BorrowTab> {
                                       ),
                                       child: Card(
                                         color: isSelected
-                                            ? Colors.grey.shade100
-                                            : Colors.grey.shade200,
+                                            ? Color.fromARGB(255, 220, 240, 220)
+                                            : const Color.fromARGB(109, 220, 240, 220),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
                                         ),
-                                        elevation: isSelected ? 2 : 0,
+                                        elevation: isSelected ? 1 : 0,
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 12,
@@ -566,9 +579,12 @@ class _BorrowTabState extends State<BorrowTab> {
                                               CircleAvatar(
                                                 backgroundColor:
                                                     Colors.green.shade100,
+                                                    radius: 17,
+                                                    
                                                 child: const Icon(
-                                                  Icons.person,
+                                                  Icons.wallet,
                                                   color: Colors.green,
+                                                  size: 16,
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
