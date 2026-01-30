@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-
 import '../../db/database_helper.dart';
 
 class ReportsTab extends StatefulWidget {
@@ -10,68 +9,118 @@ class ReportsTab extends StatefulWidget {
   State<ReportsTab> createState() => _ReportsTabState();
 }
 
-class _ReportsTabState extends State<ReportsTab> {
+class _ReportsTabState extends State<ReportsTab>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final _db = DatabaseHelper.instance;
+  final _now = DateTime.now();
+
   double _totalExpense = 0;
+
+  // Data
+  Map<int, double> _weekly = {};
   Map<String, double> _monthly = {};
-  int? _selectedMonth; // 0–11
-  Map<String, double> _filteredCategories = {};
-  String _monthName(int index) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[index];
-  }
+  Map<String, double> _yearly = {};
+  Map<String, double> _categories = {};
+
+  int? _selectedWeek;
+  int? _selectedMonth;
+  String? _selectedYear;
 
   @override
   void initState() {
     super.initState();
-    _loadReports();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChange);
+    _loadWeekly(); // default
   }
 
-  // Map of common categories → icons
-  final Map<String, IconData> _defaultCategoryIcons = {
-    'food': Icons.restaurant,
-    'groceries': Icons.shopping_cart,
-    'shopping': Icons.shopping_bag,
-    'taxi fare': Icons.local_taxi,
-    'sweets': Icons.cake,
-    'entertainment': Icons.movie,
-    'health': Icons.local_hospital,
-    'utilities': Icons.lightbulb,
-    'travel': Icons.flight,
-    'other': Icons.category,
-  };
-
-  IconData _categoryIcon(String category) {
-    // Try to find icon for lowercased category
-    return _defaultCategoryIcons[category.toLowerCase()] ?? Icons.category;
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadReports() async {
-    final db = DatabaseHelper.instance;
+  // ================= LOADERS =================
 
-    final total = await db.getTotalExpense();
-    final monthly = await db.getMonthlyExpenses();
-    final categories = await db.getCategoryWiseExpense();
+  Future<void> _onTabChange() async {
+    if (_tabController.indexIsChanging) return;
+
+    switch (_tabController.index) {
+      case 0:
+        await _loadWeekly();
+        break;
+      case 1:
+        await _loadMonthly();
+        break;
+      case 2:
+        await _loadYearly();
+        break;
+    }
+  }
+
+  Future<void> _loadWeekly() async {
+    final week = ((_now.day - 1) ~/ 7) + 1;
+
+    final weekly = await _db.getWeeklyExpenses(_now.year, _now.month);
+    final categories = await _db.getCategoryWiseExpenseByWeek(
+      _now.year,
+      _now.month,
+      week,
+    );
+    final total =
+        await _db.getTotalExpenseByWeek(_now.year, _now.month, week);
+
+    if (!mounted) return;
 
     setState(() {
+      _weekly = weekly;
+      _categories = categories;
       _totalExpense = total;
+      _selectedWeek = week;
+      _selectedMonth = null;
+      _selectedYear = null;
+    });
+  }
+
+  Future<void> _loadMonthly() async {
+    final monthly = await _db.getMonthlyExpenses(_now.year);
+    final categories =
+        await _db.getCategoryWiseExpenseByMonth(_now.year, _now.month);
+    final total =
+        await _db.getTotalExpenseByMonth(_now.year, _now.month);
+
+    if (!mounted) return;
+
+    setState(() {
       _monthly = monthly;
-      _filteredCategories = categories; // default
+      _categories = categories;
+      _totalExpense = total;
+      _selectedMonth = _now.month;
+      _selectedWeek = null;
+      _selectedYear = null;
+    });
+  }
+
+  Future<void> _loadYearly() async {
+    final yearly = await _db.getYearlyExpenses();
+    final categories =
+        await _db.getCategoryWiseExpenseByYear(_now.year);
+    final total = await _db.getTotalExpenseByYear(_now.year);
+
+    if (!mounted) return;
+
+    setState(() {
+      _yearly = yearly;
+      _categories = categories;
+      _totalExpense = total;
+      _selectedYear = _now.year.toString();
+      _selectedWeek = null;
       _selectedMonth = null;
     });
   }
+
+  // ================= UI =================
 
   @override
   Widget build(BuildContext context) {
@@ -79,284 +128,247 @@ class _ReportsTabState extends State<ReportsTab> {
       padding: const EdgeInsets.all(16),
       children: [
         _totalExpenseCard(),
+        const SizedBox(height: 12),
+        _pillTabs(),
         const SizedBox(height: 20),
-        _monthlyExpenseChart(),
+        SizedBox(
+          height: 260,
+          child: TabBarView(
+            controller: _tabController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _weeklyChart(),
+              _monthlyChart(),
+              _yearlyChart(),
+            ],
+          ),
+        ),
         const SizedBox(height: 20),
         _categoryReport(),
       ],
     );
   }
 
+  // ================= TOTAL =================
+
   Widget _totalExpenseCard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'TOTAL EXPENSE',
-            style: TextStyle(
-              fontSize: 12,
-              letterSpacing: 1.2,
-              color: Colors.green.shade400,
-              fontWeight: FontWeight.w600,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'TOTAL EXPENSE',
+          style: TextStyle(
+            fontSize: 12,
+            letterSpacing: 1.2,
+            color: Colors.green.shade400,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 6),
-          Text(
-            '₹ ${_totalExpense.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontSize: 38,
-              fontWeight: FontWeight.w700,
-              color: Color.fromARGB(255, 115, 214, 119),
-            ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '₹ ${_totalExpense.toStringAsFixed(0)}',
+          style: const TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w700,
+            color: Color.fromARGB(255, 115, 214, 119),
           ),
+        ),
+      ],
+    );
+  }
+
+  // ================= PILL TABS =================
+
+  Widget _pillTabs() {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TabBar(
+        controller: _tabController,
+        dividerColor: Colors.transparent,
+        indicator: BoxDecoration(
+          color: Colors.green,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.green.shade700,
+        labelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        tabs: const [
+          Tab(text: 'Weekly'),
+          Tab(text: 'Monthly'),
+          Tab(text: 'Yearly'),
         ],
       ),
     );
   }
 
-  Widget _monthlyExpenseChart() {
-    final now = DateTime.now();
-    final year = now.year;
+  // ================= CHARTS =================
 
-    // Prepare 12 months data (Jan–Dec)
-    final List<double> monthValues = List.filled(12, 0);
+  Widget _weeklyChart() {
+    final values = List.generate(5, (i) => _weekly[i + 1] ?? 0);
+    return _barChart(values, List.generate(5, (i) => 'W${i + 1}'),
+        onTap: (i) async {
+      final week = i + 1;
+      final cats = await _db.getCategoryWiseExpenseByWeek(
+        _now.year,
+        _now.month,
+        week,
+      );
+      final total =
+          await _db.getTotalExpenseByWeek(_now.year, _now.month, week);
 
-    _monthly.forEach((key, value) {
-      // key format: yyyy-MM
-      final month = int.parse(key.substring(5, 7));
-      monthValues[month - 1] = value;
+      setState(() {
+        _selectedWeek = week;
+        _categories = cats;
+        _totalExpense = total;
+      });
     });
+  }
 
-    final maxY = monthValues
-        .reduce((a, b) => a > b ? a : b)
-        .clamp(1.0, double.infinity);
+  Widget _monthlyChart() {
+    final values =
+        List.generate(12, (i) => _monthly['${i + 1}'.padLeft(2, '0')] ?? 0);
+    return _barChart(values, _monthLabels(), onTap: (i) async {
+      final cats =
+          await _db.getCategoryWiseExpenseByMonth(_now.year, i + 1);
+      final total =
+          await _db.getTotalExpenseByMonth(_now.year, i + 1);
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Monthly Expense ($year)',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 240,
-              child: BarChart(
-                BarChartData(
-                  maxY: maxY,
+      setState(() {
+        _selectedMonth = i + 1;
+        _categories = cats;
+        _totalExpense = total;
+      });
+    });
+  }
 
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    handleBuiltInTouches: true,
-                    touchCallback: (event, response) async {
-                      if (response == null ||
-                          response.spot == null ||
-                          !event.isInterestedForInteractions) {
-                        return;
-                      }
+  Widget _yearlyChart() {
+    final years = _yearly.keys.toList()..sort();
+    final values = years.map((y) => _yearly[y] ?? 0).toList();
 
-                      final index = response.spot!.touchedBarGroupIndex;
-                      final now = DateTime.now();
+    return _barChart(values, years, onTap: (i) async {
+      final year = int.parse(years[i]);
+      final cats = await _db.getCategoryWiseExpenseByYear(year);
+      final total = await _db.getTotalExpenseByYear(year);
 
-                      final data = await DatabaseHelper.instance
-                          .getCategoryWiseExpenseByMonth(now.year, index + 1);
+      setState(() {
+        _selectedYear = years[i];
+        _categories = cats;
+        _totalExpense = total;
+      });
+    });
+  }
 
-                      if (!mounted) return;
+  Widget _barChart(
+    List<double> values,
+    List<String> labels, {
+    required Function(int) onTap,
+  }) {
+    final maxY = values.isEmpty
+        ? 1.0
+        : values.reduce((a, b) => a > b ? a : b).clamp(1.0, double.infinity);
 
-                      setState(() {
-                        _selectedMonth = index;
-                        _filteredCategories = data;
-                      });
-                    },
-                    touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: Colors.black87,
-                      getTooltipItem: (group, _, rod, __) {
-                        const months = [
-                          'Jan',
-                          'Feb',
-                          'Mar',
-                          'Apr',
-                          'May',
-                          'Jun',
-                          'Jul',
-                          'Aug',
-                          'Sep',
-                          'Oct',
-                          'Nov',
-                          'Dec',
-                        ];
-                        return BarTooltipItem(
-                          '${months[group.x.toInt()]}\n₹ ${rod.toY.toStringAsFixed(2)}',
-                          const TextStyle(color: Colors.white),
-                        );
-                      },
-                    ),
-                  ),
-
-                  barGroups: List.generate(12, (index) {
-                    return BarChartGroupData(
-                      x: index,
-                      barRods: [
-                        BarChartRodData(
-                          toY: monthValues[index],
-                          width: 14,
-                          color: Color.fromARGB(255, 115, 214, 119),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ],
-                    );
-                  }),
-
-                  gridData: FlGridData(show: false),
-                  borderData: FlBorderData(show: false),
-
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          const months = [
-                            'Jan',
-                            'Feb',
-                            'Mar',
-                            'Apr',
-                            'May',
-                            'Jun',
-                            'Jul',
-                            'Aug',
-                            'Sep',
-                            'Oct',
-                            'Nov',
-                            'Dec',
-                          ];
-                          return Text(
-                            months[value.toInt()],
-                            style: const TextStyle(fontSize: 10),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
+    return BarChart(
+      BarChartData(
+        maxY: maxY,
+        barTouchData: BarTouchData(
+          handleBuiltInTouches: true,
+          touchCallback: (event, res) {
+            if (res?.spot == null) return;
+            onTap(res!.spot!.touchedBarGroupIndex);
+          },
+        ),
+        barGroups: List.generate(values.length, (i) {
+          return BarChartGroupData(
+            x: i,
+            barRods: [
+              BarChartRodData(
+                toY: values[i],
+                width: 18,
+                color: const Color.fromARGB(255, 115, 214, 119),
+                borderRadius: BorderRadius.circular(6),
               ),
-            ),
-          ],
+            ],
+          );
+        }),
+        titlesData: _bottomTitles(labels),
+        gridData: FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+      ),
+    );
+  }
+
+  FlTitlesData _bottomTitles(List<String> labels) {
+    return FlTitlesData(
+      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          getTitlesWidget: (v, _) =>
+              Text(labels[v.toInt()], style: const TextStyle(fontSize: 10)),
         ),
       ),
     );
   }
 
+  // ================= CATEGORY =================
+
   Widget _categoryReport() {
-    final total = _filteredCategories.values.fold(0.0, (a, b) => a + b);
+    final total = _categories.values.fold(0.0, (a, b) => a + b);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _selectedMonth == null
-              ? 'Expense by Category (All Time)'
-              : 'Expense by Category (${_monthName(_selectedMonth!)})',
+          _selectedWeek != null
+              ? 'Category – Week $_selectedWeek'
+              : _selectedMonth != null
+                  ? 'Category – ${_monthLabels()[_selectedMonth! - 1]}'
+                  : _selectedYear != null
+                      ? 'Category – $_selectedYear'
+                      : 'Category',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
-
-        if (_filteredCategories.isEmpty)
-          const Text('No expense for this period'),
-
-        ..._filteredCategories.entries.map((e) {
-          final percent = total == 0 ? 0.0 : (e.value / total);
-          final percentText = (percent * 100).toStringAsFixed(1);
-
+        ..._categories.entries.map((e) {
+          final percent = total == 0 ? 0.0 : e.value / total;
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Icon
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: const Color.fromARGB(155, 185, 246, 202),
-                  child: Icon(
-                    _categoryIcon(e.key),
-                    size: 16,
-                    color: Colors.green,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(e.key,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text('₹ ${e.value.toStringAsFixed(0)}',
+                        style: const TextStyle(color: Colors.green)),
+                  ],
                 ),
-                const SizedBox(width: 8),
-
-                // Expanded column for label, percentage, progress
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Row: Category + Percentage + Amount
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                e.key,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$percentText%',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            '₹ ${e.value.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      // Progress bar below the row
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: LinearProgressIndicator(
-                              value: percent,
-                              minHeight: 6,
-                              backgroundColor: Colors.grey.shade300,
-                              valueColor: const AlwaysStoppedAnimation(
-                                Color.fromARGB(255, 115, 214, 119),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                const SizedBox(height: 6),
+                LinearProgressIndicator(
+                  value: percent,
+                  minHeight: 6,
+                  backgroundColor: Colors.grey.shade300,
+                  valueColor: const AlwaysStoppedAnimation(
+                    Color.fromARGB(255, 115, 214, 119),
                   ),
                 ),
               ],
@@ -366,4 +378,7 @@ class _ReportsTabState extends State<ReportsTab> {
       ],
     );
   }
+
+  List<String> _monthLabels() =>
+      const ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 }

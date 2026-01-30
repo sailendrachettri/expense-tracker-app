@@ -224,37 +224,125 @@ class DatabaseHelper {
     return (result.first['total'] as double?) ?? 0.0;
   }
 
-  Future<Map<String, double>> getMonthlyExpenses() async {
-    final db = await database;
+  // ---------------- TOTALS ----------------
 
-    final result = await db.rawQuery('''
-    SELECT 
-      substr(date, 1, 7) as month,
-      SUM(amount) as total
+  Future<double> getTotalExpenseByWeek(int year, int month, int week) async {
+    final db = await database;
+    final start = DateTime(year, month, (week - 1) * 7 + 1);
+    final end = start.add(const Duration(days: 7));
+
+    final res = await db.rawQuery(
+      '''
+    SELECT SUM(amount) as total FROM expenses
+    WHERE date >= ? AND date < ?
+  ''',
+      [start.toIso8601String(), end.toIso8601String()],
+    );
+
+    return (res.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  Future<double> getTotalExpenseByMonth(int year, int month) async {
+    final db = await database;
+    final res = await db.rawQuery(
+      '''
+    SELECT SUM(amount) as total FROM expenses
+    WHERE strftime('%Y', date) = ?
+    AND strftime('%m', date) = ?
+  ''',
+      [year.toString(), month.toString().padLeft(2, '0')],
+    );
+
+    return (res.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  Future<double> getTotalExpenseByYear(int year) async {
+    final db = await database;
+    final res = await db.rawQuery(
+      '''
+    SELECT SUM(amount) as total FROM expenses
+    WHERE strftime('%Y', date) = ?
+  ''',
+      [year.toString()],
+    );
+
+    return (res.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  // ---------------- BARS ----------------
+
+  Future<Map<int, double>> getWeeklyExpenses(int year, int month) async {
+    final db = await database;
+    final res = await db.rawQuery(
+      '''
+    SELECT ((CAST(strftime('%d', date) AS INT)-1)/7)+1 as week,
+           SUM(amount) as total
     FROM expenses
-    GROUP BY month
-    ORDER BY month ASC
-  ''');
+    WHERE strftime('%Y', date)=? AND strftime('%m', date)=?
+    GROUP BY week
+  ''',
+      [year.toString(), month.toString().padLeft(2, '0')],
+    );
 
     return {
-      for (final row in result)
-        row['month'] as String: (row['total'] as double),
+      for (var r in res) r['week'] as int: (r['total'] as num).toDouble(),
     };
   }
 
-  Future<Map<String, double>> getCategoryWiseExpense() async {
+  Future<Map<String, double>> getMonthlyExpenses(int year) async {
     final db = await database;
-
-    final result = await db.rawQuery('''
-    SELECT category, SUM(amount) as total
+    final res = await db.rawQuery(
+      '''
+    SELECT strftime('%m', date) as month, SUM(amount) as total
     FROM expenses
-    GROUP BY category
-    ORDER BY total DESC
+    WHERE strftime('%Y', date)=?
+    GROUP BY month
+  ''',
+      [year.toString()],
+    );
+
+    return {
+      for (var r in res) r['month'] as String: (r['total'] as num).toDouble(),
+    };
+  }
+
+  Future<Map<String, double>> getYearlyExpenses() async {
+    final db = await database;
+    final res = await db.rawQuery('''
+    SELECT strftime('%Y', date) as year, SUM(amount) as total
+    FROM expenses
+    GROUP BY year
   ''');
 
     return {
-      for (final row in result)
-        row['category'] as String: (row['total'] as double),
+      for (var r in res) r['year'] as String: (r['total'] as num).toDouble(),
+    };
+  }
+
+  // ---------------- CATEGORY ----------------
+
+  Future<Map<String, double>> getCategoryWiseExpenseByWeek(
+    int year,
+    int month,
+    int week,
+  ) async {
+    final db = await database;
+    final start = DateTime(year, month, (week - 1) * 7 + 1);
+    final end = start.add(const Duration(days: 7));
+
+    final res = await db.rawQuery(
+      '''
+    SELECT category, SUM(amount) as total
+    FROM expenses
+    WHERE date >= ? AND date < ?
+    GROUP BY category
+  ''',
+      [start.toIso8601String(), end.toIso8601String()],
+    );
+
+    return {
+      for (var r in res)
+        r['category'] as String: (r['total'] as num).toDouble(),
     };
   }
 
@@ -263,20 +351,38 @@ class DatabaseHelper {
     int month,
   ) async {
     final db = await database;
-    final monthStr = month.toString().padLeft(2, '0');
-    final yearMonth = '$year-$monthStr';
-
-    final result = await db.rawQuery('''
+    final res = await db.rawQuery(
+      '''
     SELECT category, SUM(amount) as total
     FROM expenses
-    WHERE date LIKE '$yearMonth%'
+    WHERE strftime('%Y', date)=?
+    AND strftime('%m', date)=?
     GROUP BY category
-    ORDER BY total DESC
-  ''');
+  ''',
+      [year.toString(), month.toString().padLeft(2, '0')],
+    );
 
     return {
-      for (final row in result)
-        row['category'] as String: (row['total'] as double),
+      for (var r in res)
+        r['category'] as String: (r['total'] as num).toDouble(),
+    };
+  }
+
+  Future<Map<String, double>> getCategoryWiseExpenseByYear(int year) async {
+    final db = await database;
+    final res = await db.rawQuery(
+      '''
+    SELECT category, SUM(amount) as total
+    FROM expenses
+    WHERE strftime('%Y', date)=?
+    GROUP BY category
+  ''',
+      [year.toString()],
+    );
+
+    return {
+      for (var r in res)
+        r['category'] as String: (r['total'] as num).toDouble(),
     };
   }
 }
