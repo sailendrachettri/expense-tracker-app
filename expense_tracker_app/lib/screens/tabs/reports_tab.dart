@@ -41,6 +41,22 @@ class _ReportsTabState extends State<ReportsTab>
     super.dispose();
   }
 
+  String _totalExpenseLabel() {
+    if (_selectedWeek != null) {
+      return 'TOTAL EXPENSE · WEEK $_selectedWeek';
+    }
+
+    if (_selectedMonth != null) {
+      return 'TOTAL EXPENSE · ${_monthLabels()[_selectedMonth! - 1].toUpperCase()}';
+    }
+
+    if (_selectedYear != null) {
+      return 'TOTAL EXPENSE · $_selectedYear';
+    }
+
+    return 'TOTAL EXPENSE';
+  }
+
   // ================= LOADERS =================
 
   Future<void> _onTabChange() async {
@@ -168,7 +184,7 @@ class _ReportsTabState extends State<ReportsTab>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'TOTAL EXPENSE',
+          _totalExpenseLabel(),
           style: TextStyle(
             fontSize: 12,
             letterSpacing: 1.2,
