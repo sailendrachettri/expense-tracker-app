@@ -68,8 +68,7 @@ class _ReportsTabState extends State<ReportsTab>
       _now.month,
       week,
     );
-    final total =
-        await _db.getTotalExpenseByWeek(_now.year, _now.month, week);
+    final total = await _db.getTotalExpenseByWeek(_now.year, _now.month, week);
 
     if (!mounted) return;
 
@@ -85,10 +84,11 @@ class _ReportsTabState extends State<ReportsTab>
 
   Future<void> _loadMonthly() async {
     final monthly = await _db.getMonthlyExpenses(_now.year);
-    final categories =
-        await _db.getCategoryWiseExpenseByMonth(_now.year, _now.month);
-    final total =
-        await _db.getTotalExpenseByMonth(_now.year, _now.month);
+    final categories = await _db.getCategoryWiseExpenseByMonth(
+      _now.year,
+      _now.month,
+    );
+    final total = await _db.getTotalExpenseByMonth(_now.year, _now.month);
 
     if (!mounted) return;
 
@@ -102,10 +102,26 @@ class _ReportsTabState extends State<ReportsTab>
     });
   }
 
+  final Map<String, IconData> _categoryIcons = {
+    'food': Icons.restaurant,
+    'groceries': Icons.shopping_cart,
+    'shopping': Icons.shopping_bag,
+    'travel': Icons.flight,
+    'health': Icons.local_hospital,
+    'entertainment': Icons.movie,
+    'rent': Icons.home,
+    'fuel': Icons.local_gas_station,
+    'education': Icons.school,
+    'subscriptions': Icons.subscriptions,
+  };
+
+  IconData _categoryIcon(String category) {
+    return _categoryIcons[category.toLowerCase()] ?? Icons.category;
+  }
+
   Future<void> _loadYearly() async {
     final yearly = await _db.getYearlyExpenses();
-    final categories =
-        await _db.getCategoryWiseExpenseByYear(_now.year);
+    final categories = await _db.getCategoryWiseExpenseByYear(_now.year);
     final total = await _db.getTotalExpenseByYear(_now.year);
 
     if (!mounted) return;
@@ -136,11 +152,7 @@ class _ReportsTabState extends State<ReportsTab>
           child: TabBarView(
             controller: _tabController,
             physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _weeklyChart(),
-              _monthlyChart(),
-              _yearlyChart(),
-            ],
+            children: [_weeklyChart(), _monthlyChart(), _yearlyChart()],
           ),
         ),
         const SizedBox(height: 20),
@@ -181,31 +193,58 @@ class _ReportsTabState extends State<ReportsTab>
 
   Widget _pillTabs() {
     return Container(
-      height: 42,
-      padding: const EdgeInsets.all(4),
+      height: 44,
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.08),
+        gradient: LinearGradient(
+          colors: [
+            Colors.green.withOpacity(0.12),
+            Colors.green.withOpacity(0.06),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.green.withOpacity(0.15)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.green.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: TabBar(
         controller: _tabController,
         dividerColor: Colors.transparent,
+        splashBorderRadius: BorderRadius.circular(999),
+        indicatorSize: TabBarIndicatorSize.tab,
         indicator: BoxDecoration(
-          color: Colors.green,
+          gradient: const LinearGradient(
+            colors: [
+              Color.fromARGB(255, 115, 214, 119),
+              Color.fromARGB(255, 88, 190, 103),
+            ],
+          ),
           borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         labelColor: Colors.white,
-        unselectedLabelColor: Colors.green.shade700,
+        unselectedLabelColor: Colors.green.shade800,
         labelStyle: const TextStyle(
+          fontSize: 13.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
+        ),
+        unselectedLabelStyle: const TextStyle(
           fontSize: 13,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
         tabs: const [
           Tab(text: 'Weekly'),
@@ -220,57 +259,71 @@ class _ReportsTabState extends State<ReportsTab>
 
   Widget _weeklyChart() {
     final values = List.generate(5, (i) => _weekly[i + 1] ?? 0);
-    return _barChart(values, List.generate(5, (i) => 'W${i + 1}'),
-        onTap: (i) async {
-      final week = i + 1;
-      final cats = await _db.getCategoryWiseExpenseByWeek(
-        _now.year,
-        _now.month,
-        week,
-      );
-      final total =
-          await _db.getTotalExpenseByWeek(_now.year, _now.month, week);
+    return _barChart(
+      values,
+      List.generate(5, (i) => 'W${i + 1}'),
+      onTap: (i) async {
+        final week = i + 1;
+        final cats = await _db.getCategoryWiseExpenseByWeek(
+          _now.year,
+          _now.month,
+          week,
+        );
+        final total = await _db.getTotalExpenseByWeek(
+          _now.year,
+          _now.month,
+          week,
+        );
 
-      setState(() {
-        _selectedWeek = week;
-        _categories = cats;
-        _totalExpense = total;
-      });
-    });
+        setState(() {
+          _selectedWeek = week;
+          _categories = cats;
+          _totalExpense = total;
+        });
+      },
+    );
   }
 
   Widget _monthlyChart() {
-    final values =
-        List.generate(12, (i) => _monthly['${i + 1}'.padLeft(2, '0')] ?? 0);
-    return _barChart(values, _monthLabels(), onTap: (i) async {
-      final cats =
-          await _db.getCategoryWiseExpenseByMonth(_now.year, i + 1);
-      final total =
-          await _db.getTotalExpenseByMonth(_now.year, i + 1);
+    final values = List.generate(
+      12,
+      (i) => _monthly['${i + 1}'.padLeft(2, '0')] ?? 0,
+    );
+    return _barChart(
+      values,
+      _monthLabels(),
+      onTap: (i) async {
+        final cats = await _db.getCategoryWiseExpenseByMonth(_now.year, i + 1);
+        final total = await _db.getTotalExpenseByMonth(_now.year, i + 1);
 
-      setState(() {
-        _selectedMonth = i + 1;
-        _categories = cats;
-        _totalExpense = total;
-      });
-    });
+        setState(() {
+          _selectedMonth = i + 1;
+          _categories = cats;
+          _totalExpense = total;
+        });
+      },
+    );
   }
 
   Widget _yearlyChart() {
     final years = _yearly.keys.toList()..sort();
     final values = years.map((y) => _yearly[y] ?? 0).toList();
 
-    return _barChart(values, years, onTap: (i) async {
-      final year = int.parse(years[i]);
-      final cats = await _db.getCategoryWiseExpenseByYear(year);
-      final total = await _db.getTotalExpenseByYear(year);
+    return _barChart(
+      values,
+      years,
+      onTap: (i) async {
+        final year = int.parse(years[i]);
+        final cats = await _db.getCategoryWiseExpenseByYear(year);
+        final total = await _db.getTotalExpenseByYear(year);
 
-      setState(() {
-        _selectedYear = years[i];
-        _categories = cats;
-        _totalExpense = total;
-      });
-    });
+        setState(() {
+          _selectedYear = years[i];
+          _categories = cats;
+          _totalExpense = total;
+        });
+      },
+    );
   }
 
   Widget _barChart(
@@ -335,40 +388,76 @@ class _ReportsTabState extends State<ReportsTab>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 20),
         Text(
           _selectedWeek != null
               ? 'Category – Week $_selectedWeek'
               : _selectedMonth != null
-                  ? 'Category – ${_monthLabels()[_selectedMonth! - 1]}'
-                  : _selectedYear != null
-                      ? 'Category – $_selectedYear'
-                      : 'Category',
+              ? 'Category – ${_monthLabels()[_selectedMonth! - 1]}'
+              : _selectedYear != null
+              ? 'Category – $_selectedYear'
+              : 'Category',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
+
+        /// Category rows
         ..._categories.entries.map((e) {
           final percent = total == 0 ? 0.0 : e.value / total;
+
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(e.key,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text('₹ ${e.value.toStringAsFixed(0)}',
-                        style: const TextStyle(color: Colors.green)),
-                  ],
+                /// Icon
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.green.shade100,
+                  child: Icon(
+                    _categoryIcon(e.key),
+                    size: 16,
+                    color: Colors.green.shade700,
+                  ),
                 ),
-                const SizedBox(height: 6),
-                LinearProgressIndicator(
-                  value: percent,
-                  minHeight: 6,
-                  backgroundColor: Colors.grey.shade300,
-                  valueColor: const AlwaysStoppedAnimation(
-                    Color.fromARGB(255, 115, 214, 119),
+
+                const SizedBox(width: 10),
+
+                /// Name + Progress
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// Title row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            e.key,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            '₹ ${e.value.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      /// Progress bar
+                      LinearProgressIndicator(
+                        value: percent,
+                        minHeight: 6,
+                        borderRadius: BorderRadius.circular(6),
+                        backgroundColor: Colors.grey.shade300,
+                        valueColor: const AlwaysStoppedAnimation(
+                          Color.fromARGB(255, 115, 214, 119),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -379,6 +468,18 @@ class _ReportsTabState extends State<ReportsTab>
     );
   }
 
-  List<String> _monthLabels() =>
-      const ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  List<String> _monthLabels() => const [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
 }
