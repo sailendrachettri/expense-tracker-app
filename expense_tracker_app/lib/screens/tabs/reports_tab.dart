@@ -322,19 +322,30 @@ class _ReportsTabState extends State<ReportsTab>
   }
 
   Widget _yearlyChart() {
-    final years = _yearly.keys.toList()..sort();
-    final values = years.map((y) => _yearly[y] ?? 0).toList();
+    final dataYears = _yearly.keys.map((y) => int.parse(y)).toList();
+    dataYears.sort();
+
+    final currentYear = DateTime.now().year;
+    final maxYear = dataYears.isNotEmpty ? dataYears.last : currentYear;
+
+    // Add 2 future years
+    final allYears = List.generate(
+      (maxYear - (dataYears.isNotEmpty ? dataYears.first : currentYear) + 5),
+      (i) => (dataYears.isNotEmpty ? dataYears.first : currentYear) + i,
+    );
+
+    final values = allYears.map((y) => _yearly[y.toString()] ?? 0.0).toList();
 
     return _barChart(
       values,
-      years,
+      allYears.map((y) => y.toString()).toList(),
       onTap: (i) async {
-        final year = int.parse(years[i]);
+        final year = allYears[i];
         final cats = await _db.getCategoryWiseExpenseByYear(year);
         final total = await _db.getTotalExpenseByYear(year);
 
         setState(() {
-          _selectedYear = years[i];
+          _selectedYear = year.toString();
           _categories = cats;
           _totalExpense = total;
         });
@@ -347,15 +358,36 @@ class _ReportsTabState extends State<ReportsTab>
     List<String> labels, {
     required Function(int) onTap,
   }) {
-    final maxY = values.isEmpty
+    final maxValue = values.isEmpty
         ? 1.0
-        : values.reduce((a, b) => a > b ? a : b).clamp(1.0, double.infinity);
+        : values.reduce((a, b) => a > b ? a : b);
+    final maxY = (maxValue * 1.32).clamp(1.0, double.infinity);
 
     return BarChart(
       BarChartData(
         maxY: maxY,
+        alignment: BarChartAlignment.spaceAround,
         barTouchData: BarTouchData(
+          enabled: true,
           handleBuiltInTouches: true,
+          touchTooltipData: BarTouchTooltipData(
+            tooltipBgColor: const Color.fromARGB(162, 215, 238, 219),
+            tooltipPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 4,
+            ),
+            tooltipMargin: 8,
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              return BarTooltipItem(
+                '₹ ${rod.toY.toStringAsFixed(0)}',
+                const TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
+              );
+            },
+          ),
           touchCallback: (event, res) {
             if (res?.spot == null) return;
             onTap(res!.spot!.touchedBarGroupIndex);
@@ -367,9 +399,14 @@ class _ReportsTabState extends State<ReportsTab>
             barRods: [
               BarChartRodData(
                 toY: values[i],
-                width: 18,
-                color: const Color.fromARGB(255, 115, 214, 119),
+                width: 16,
+                color: Color.fromARGB(255, 115, 214, 119), // faded green
                 borderRadius: BorderRadius.circular(6),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: maxY, // background height
+                  color: const Color.fromARGB(44, 198, 230, 200),
+                ),
               ),
             ],
           );

@@ -328,7 +328,15 @@ class DatabaseHelper {
   ) async {
     final db = await database;
     final start = DateTime(year, month, (week - 1) * 7 + 1);
-    final end = start.add(const Duration(days: 7));
+    final lastDayOfMonth = DateTime(
+      year,
+      month + 1,
+      0,
+    ).day; // last day of month
+    final endDay = ((week - 1) * 7 + 7) > lastDayOfMonth
+        ? lastDayOfMonth
+        : (week - 1) * 7 + 7;
+    final end = DateTime(year, month, endDay + 1); // exclusive
 
     final res = await db.rawQuery(
       '''
@@ -336,6 +344,7 @@ class DatabaseHelper {
     FROM expenses
     WHERE date >= ? AND date < ?
     GROUP BY category
+    ORDER BY total DESC
   ''',
       [start.toIso8601String(), end.toIso8601String()],
     );
@@ -358,6 +367,7 @@ class DatabaseHelper {
     WHERE strftime('%Y', date)=?
     AND strftime('%m', date)=?
     GROUP BY category
+    ORDER BY total DESC
   ''',
       [year.toString(), month.toString().padLeft(2, '0')],
     );
@@ -376,6 +386,7 @@ class DatabaseHelper {
     FROM expenses
     WHERE strftime('%Y', date)=?
     GROUP BY category
+    ORDER BY total DESC
   ''',
       [year.toString()],
     );
